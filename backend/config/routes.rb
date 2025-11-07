@@ -1,10 +1,26 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  # Devise routes (not used for API, kept for compatibility)
+  devise_for :users, skip: :all
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  # API routes
+  namespace :api do
+    namespace :v1 do
+      # Authentication
+      post 'auth/register', to: 'auth#register'
+      post 'auth/login', to: 'auth#login'
+      delete 'auth/logout', to: 'auth#logout'
+      get 'auth/me', to: 'auth#me'
+
+      # Future routes will go here
+      # resources :marmiteiros, only: [:index, :show]
+      # resources :favorites, only: [:index, :create, :destroy]
+      # resources :reviews, only: [:index, :create, :update, :destroy]
+    end
+  end
+
+  # Health check
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # Root path for API info
+  get "/" => proc { [200, {}, ['Marmitas.top API v1 - See /api/v1']] }
 end
