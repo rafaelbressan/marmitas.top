@@ -49,7 +49,7 @@ module Api
       private
 
       def register_params
-        params.require(:user).permit(:email, :password, :password_confirmation, :name, :phone, :role)
+        params.require(:user).permit(:email, :password, :password_confirmation, :name, :phone)
       end
 
       def login_params
@@ -66,7 +66,9 @@ module Api
           email: user.email,
           name: user.name,
           phone: user.phone,
-          role: user.role,
+          is_admin: user.is_admin,
+          is_seller: user.seller?,
+          has_seller_profile: user.seller_profile.present?,
           active: user.active,
           created_at: user.created_at
         }

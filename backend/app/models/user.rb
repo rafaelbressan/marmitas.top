@@ -5,36 +5,32 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable,
          :jwt_authenticatable, jwt_revocation_strategy: JwtDenylist
 
-  # Enums
-  ROLES = %w[consumer marmiteiro admin].freeze
-
   # Associations
-  has_one :marmiteiro_profile, dependent: :destroy
+  has_one :seller_profile, dependent: :destroy
   has_many :favorites, dependent: :destroy
-  has_many :favorited_marmiteiros, through: :favorites, source: :marmiteiro_profile
+  has_many :favorited_sellers, through: :favorites, source: :seller_profile
   has_many :reviews, dependent: :destroy
   has_many :device_tokens, dependent: :destroy
 
   # Validations
   validates :name, presence: true
-  validates :role, presence: true, inclusion: { in: ROLES }
 
   # Scopes
   scope :active, -> { where(active: true) }
-  scope :consumers, -> { where(role: 'consumer') }
-  scope :marmiteiros, -> { where(role: 'marmiteiro') }
-  scope :admins, -> { where(role: 'admin') }
+  scope :admins, -> { where(is_admin: true) }
+  scope :sellers, -> { joins(:seller_profile) }
+  scope :with_seller_profile, -> { includes(:seller_profile).where.not(seller_profiles: { id: nil }) }
 
   # Methods
-  def consumer?
-    role == 'consumer'
-  end
-
-  def marmiteiro?
-    role == 'marmiteiro'
-  end
-
   def admin?
-    role == 'admin'
+    is_admin
+  end
+
+  def seller?
+    seller_profile.present?
+  end
+
+  def consumer?
+    true # All users are consumers by default
   end
 end

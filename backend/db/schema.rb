@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_07_195247) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_07_212103) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -22,21 +22,47 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_07_195247) do
     t.index ["jti"], name: "index_jwt_denylists_on_jti", unique: true
   end
 
+  create_table "seller_profiles", force: :cascade do |t|
+    t.decimal "average_rating", precision: 3, scale: 2, default: "0.0"
+    t.text "bio"
+    t.string "business_name", null: false
+    t.string "city"
+    t.datetime "created_at", null: false
+    t.boolean "currently_active", default: false, null: false
+    t.integer "followers_count", default: 0, null: false
+    t.datetime "last_active_at"
+    t.jsonb "operating_hours", default: {}
+    t.string "phone"
+    t.integer "reviews_count", default: 0, null: false
+    t.string "state"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.boolean "verified", default: false, null: false
+    t.string "whatsapp"
+    t.index ["city"], name: "index_seller_profiles_on_city"
+    t.index ["currently_active"], name: "index_seller_profiles_on_currently_active"
+    t.index ["user_id"], name: "index_seller_profiles_on_user_id", unique: true
+    t.index ["verified"], name: "index_seller_profiles_on_verified"
+  end
+
   create_table "users", force: :cascade do |t|
     t.boolean "active", default: true
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
+    t.boolean "is_admin", default: false, null: false
     t.datetime "last_seen_at"
     t.string "name", null: false
     t.string "phone"
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
     t.string "reset_password_token"
-    t.string "role", default: "consumer", null: false
+    t.string "role"
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
     t.index ["role"], name: "index_users_on_role"
   end
+
+  add_foreign_key "seller_profiles", "users"
 end
