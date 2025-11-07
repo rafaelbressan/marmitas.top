@@ -147,6 +147,11 @@ A mobile-first platform where:
 - Upload multiple photos
 - Set available quantity
 - Update real-time (e.g., "5 left", "Sold out")
+- **Share to WhatsApp:**
+  - "Copy Menu" button copies formatted menu text to clipboard
+  - "Share on WhatsApp" button opens WhatsApp with pre-filled message
+  - Formatted template: "🍱 Cardápio de Hoje - [Business Name]\n\n[Dish Name]\n💰 R$ [Price]\n📍 [Location]\n\n[Description]\n\nPeça já! 📲"
+  - Essential for marmiteiros who use WhatsApp broadcast lists
 
 #### 3. Location Management
 - Add regular selling spots (saved locations)
@@ -509,6 +514,7 @@ GET    /marmiteiro/menu                # My current menu
 POST   /marmiteiro/menu                # Post today's menu
 PATCH  /marmiteiro/menu/:id            # Update menu
 DELETE /marmiteiro/menu/:id            # Delete menu
+GET    /marmiteiro/menu/:id/whatsapp-text  # Get formatted WhatsApp message
 
 # Activity
 POST   /marmiteiro/announce-arrival    # "I'm here!"
@@ -633,6 +639,10 @@ NotificationsChannel      # Real-time notifications
    - Photo upload (multiple)
    - Food type/dietary tags
    - "Publish" button
+   - **After Publishing:**
+     - "Copy Menu to Clipboard" button
+     - "Share on WhatsApp" button (opens WhatsApp with formatted message)
+     - Success toast: "Menu copied! Ready to share on WhatsApp"
 
 3. **Announce Location**
    - Map showing saved locations
