@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_09_233018) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_09_234001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -65,14 +65,17 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_09_233018) do
   end
 
   create_table "seller_profiles", force: :cascade do |t|
+    t.datetime "arrived_at"
     t.decimal "average_rating", precision: 3, scale: 2, default: "0.0"
     t.text "bio"
     t.string "business_name", null: false
     t.string "city"
     t.datetime "created_at", null: false
+    t.bigint "current_location_id"
     t.boolean "currently_active", default: false, null: false
     t.integer "followers_count", default: 0, null: false
     t.datetime "last_active_at"
+    t.datetime "leaving_at"
     t.jsonb "operating_hours", default: {}
     t.string "phone"
     t.integer "reviews_count", default: 0, null: false
@@ -81,10 +84,26 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_09_233018) do
     t.bigint "user_id", null: false
     t.boolean "verified", default: false, null: false
     t.string "whatsapp"
+    t.index ["arrived_at"], name: "index_seller_profiles_on_arrived_at"
     t.index ["city"], name: "index_seller_profiles_on_city"
+    t.index ["current_location_id"], name: "index_seller_profiles_on_current_location_id"
     t.index ["currently_active"], name: "index_seller_profiles_on_currently_active"
+    t.index ["leaving_at"], name: "index_seller_profiles_on_leaving_at"
     t.index ["user_id"], name: "index_seller_profiles_on_user_id", unique: true
     t.index ["verified"], name: "index_seller_profiles_on_verified"
+  end
+
+  create_table "selling_locations", force: :cascade do |t|
+    t.text "address"
+    t.datetime "created_at", null: false
+    t.decimal "latitude", precision: 10, scale: 6
+    t.decimal "longitude", precision: 10, scale: 6
+    t.string "name", null: false
+    t.text "notes"
+    t.bigint "seller_profile_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["seller_profile_id", "name"], name: "index_selling_locations_on_seller_profile_id_and_name"
+    t.index ["seller_profile_id"], name: "index_selling_locations_on_seller_profile_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -141,7 +160,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_09_233018) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "dishes", "seller_profiles"
+  add_foreign_key "seller_profiles", "selling_locations", column: "current_location_id"
   add_foreign_key "seller_profiles", "users"
+  add_foreign_key "selling_locations", "seller_profiles"
   add_foreign_key "weekly_menu_dishes", "dishes"
   add_foreign_key "weekly_menu_dishes", "weekly_menus"
   add_foreign_key "weekly_menus", "seller_profiles"

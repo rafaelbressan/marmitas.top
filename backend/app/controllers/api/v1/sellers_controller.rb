@@ -85,9 +85,11 @@ module Api
           verified: seller.verified,
           currently_active: seller.currently_active,
           last_active_at: seller.last_active_at,
-          current_menu: seller.current_menu ? menu_summary(seller.current_menu) : nil
-          # TODO: Add current_location when selling_locations model is created
-          # current_location: seller.current_location ? location_summary(seller.current_location) : nil
+          arrived_at: seller.arrived_at,
+          leaving_at: seller.leaving_at,
+          current_menu: seller.current_menu ? menu_summary(seller.current_menu) : nil,
+          current_location: seller.current_location ? location_summary(seller.current_location) : nil,
+          selling_locations: seller.selling_locations.map { |loc| location_summary(loc) }
         }
       end
 

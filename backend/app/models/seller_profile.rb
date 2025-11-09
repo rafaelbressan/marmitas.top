@@ -3,8 +3,9 @@ class SellerProfile < ApplicationRecord
   belongs_to :user
   has_many :dishes, dependent: :destroy
   has_many :weekly_menus, dependent: :destroy
+  has_many :selling_locations, dependent: :destroy
+  belongs_to :current_location, class_name: 'SellingLocation', optional: true
   # TODO: Uncomment when models are created
-  # has_many :selling_locations, dependent: :destroy
   # has_many :favorites, dependent: :destroy
   # has_many :followers, through: :favorites, source: :user
   # has_many :reviews, dependent: :destroy
@@ -17,6 +18,7 @@ class SellerProfile < ApplicationRecord
   # Validations
   validates :business_name, presence: true
   validates :user_id, uniqueness: true
+  validate :leaving_at_within_96_hours, if: -> { leaving_at.present? && arrived_at.present? }
 
   # Scopes
   scope :verified, -> { where(verified: true) }
@@ -45,36 +47,66 @@ class SellerProfile < ApplicationRecord
     weekly_menus.available_now.first
   end
 
-  # TODO: Uncomment when selling_locations model is created
-  # def current_location
-  #   return nil unless current_menu
-  #   selling_locations.find_by(id: current_menu.selling_location_id)
-  # end
+  # Announce arrival at a location
+  def announce_arrival(location_id, leaving_at: nil)
+    location = selling_locations.find(location_id)
 
-  # def announce_arrival(location_id)
-  #   transaction do
-  #     update!(currently_active: true, last_active_at: Time.current)
-  #     activity_logs.create!(
-  #       activity_type: 'arrived',
-  #       selling_location_id: location_id,
-  #       occurred_at: Time.current
-  #     )
-  #     notify_followers(:arrival)
-  #   end
-  # end
+    transaction do
+      update!(
+        current_location_id: location_id,
+        currently_active: true,
+        last_active_at: Time.current,
+        arrived_at: Time.current,
+        leaving_at: leaving_at
+      )
+      # TODO: activity_logs.create!(activity_type: 'arrived', selling_location_id: location_id, occurred_at: Time.current)
+      # TODO: notify_followers(:arrival)
+    end
 
-  # def announce_departure
-  #   transaction do
-  #     update!(currently_active: false)
-  #     activity_logs.create!(
-  #       activity_type: 'departed',
-  #       occurred_at: Time.current
-  #     )
-  #     notify_followers(:departure)
-  #   end
-  # end
+    self
+  end
+
+  # Announce departure
+  def announce_departure
+    transaction do
+      update!(
+        current_location_id: nil,
+        currently_active: false,
+        arrived_at: nil,
+        leaving_at: nil
+      )
+      # TODO: activity_logs.create!(activity_type: 'departed', occurred_at: Time.current)
+      # TODO: notify_followers(:departure)
+    end
+
+    self
+  end
+
+  # Check if broadcast has expired
+  def broadcast_expired?
+    return false unless leaving_at.present?
+    Time.current >= leaving_at
+  end
+
+  # Auto-shutoff if past leaving time
+  def auto_shutoff_if_expired!
+    if broadcast_expired?
+      announce_departure
+      true
+    else
+      false
+    end
+  end
 
   private
+
+  def leaving_at_within_96_hours
+    if leaving_at <= arrived_at
+      errors.add(:leaving_at, "must be after arrival time")
+    elsif leaving_at > arrived_at + 96.hours
+      errors.add(:leaving_at, "cannot be more than 96 hours after arrival")
+    end
+  end
 
   def update_stats
     # UpdateSellerStatsJob.perform_later(id) # Will implement with Sidekiq later

@@ -43,7 +43,12 @@ Rails.application.routes.draw do
           end
         end
 
-        # resources :locations, only: [:index, :create, :update, :destroy]
+        resources :selling_locations, only: [:index, :show, :create, :update, :destroy] do
+          member do
+            post :arrive
+            post :leave
+          end
+        end
       end
 
       # Future routes
