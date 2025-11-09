@@ -1,9 +1,10 @@
 class SellerProfile < ApplicationRecord
   # Associations
   belongs_to :user
+  has_many :dishes, dependent: :destroy
+  has_many :weekly_menus, dependent: :destroy
   # TODO: Uncomment when models are created
   # has_many :selling_locations, dependent: :destroy
-  # has_many :daily_menus, dependent: :destroy
   # has_many :favorites, dependent: :destroy
   # has_many :followers, through: :favorites, source: :user
   # has_many :reviews, dependent: :destroy
@@ -40,11 +41,11 @@ class SellerProfile < ApplicationRecord
   after_commit :update_stats, on: [:create, :update]
 
   # Methods
-  # TODO: Uncomment when daily_menus model is created
-  # def current_menu
-  #   daily_menus.where(menu_date: Date.today, active: true).first
-  # end
+  def current_menu
+    weekly_menus.available_now.first
+  end
 
+  # TODO: Uncomment when selling_locations model is created
   # def current_location
   #   return nil unless current_menu
   #   selling_locations.find_by(id: current_menu.selling_location_id)

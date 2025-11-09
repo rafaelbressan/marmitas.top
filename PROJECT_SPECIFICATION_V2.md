@@ -30,7 +30,7 @@ Marmitas.top V2 transforms from a static list into a **dynamic, location-based m
 
 ### The Solution
 A mobile-first platform where:
-- Marmiteiros register, showcase daily menus, and broadcast their location
+- Marmiteiros register, showcase weekly menus, and broadcast their location
 - Consumers discover nearby options, follow favorites, and receive real-time notifications
 - Map-based interface shows active marmiteiros in real-time
 - Community-driven with ratings and reviews
@@ -44,7 +44,7 @@ A mobile-first platform where:
 
 **Needs:**
 - Find nearby marmiteiros quickly
-- See daily menus and prices
+- See weekly menus and prices
 - Follow favorite producers
 - Get notified when favorites are nearby
 - View ratings and reviews
@@ -109,8 +109,8 @@ A mobile-first platform where:
 - Gallery of food photos
 - Contact information (optional)
 
-#### 3. Daily Menu
-- Today's offering (dish name, description)
+#### 3. Weekly Menu
+- Weekly offerings (dish name, description)
 - Price per portion
 - Available quantity (live updates)
 - Dietary information (vegan, vegetarian, gluten-free, etc.)
@@ -345,7 +345,7 @@ add_index :selling_locations, [:latitude, :longitude]
 add_index :selling_locations, :marmiteiro_profile_id
 ```
 
-### Daily Menus Table
+### Weekly Menus Table
 ```ruby
 create_table :daily_menus do |t|
   t.references :marmiteiro_profile, foreign_key: true, null: false
@@ -754,7 +754,7 @@ end
 **Success Metrics:**
 - 10 marmiteiros onboarded
 - 50 consumers using app
-- 5 daily menu posts
+- 5 weekly menu posts
 
 ### Phase 2: Engagement Features (4-6 weeks)
 

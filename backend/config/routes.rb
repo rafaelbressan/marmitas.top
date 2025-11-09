@@ -16,12 +16,33 @@ Rails.application.routes.draw do
         collection do
           get :nearby
         end
+        member do
+          get :menus, to: 'menus#seller_menus'
+        end
+      end
+
+      # Menus (public browsing)
+      resources :menus, only: [:index, :show] do
+        collection do
+          get :available_today
+        end
       end
 
       # Seller management (authenticated sellers only)
       namespace :seller do
         resource :profile, only: [:show, :create, :update, :destroy]
-        # resources :menus, only: [:index, :create, :update, :destroy]
+
+        resources :dishes, only: [:index, :show, :create, :update, :destroy]
+
+        resources :weekly_menus, only: [:index, :show, :create, :update, :destroy] do
+          member do
+            post :add_dish
+            delete 'remove_dish/:dish_id', to: 'weekly_menus#remove_dish', as: :remove_dish
+            post :duplicate
+            get :whatsapp_text
+          end
+        end
+
         # resources :locations, only: [:index, :create, :update, :destroy]
       end
 

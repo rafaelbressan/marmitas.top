@@ -64,9 +64,8 @@ module Api
           reviews_count: seller.reviews_count,
           followers_count: seller.followers_count,
           verified: seller.verified,
-          currently_active: seller.currently_active
-          # TODO: Add has_current_menu when daily_menus model is created
-          # has_current_menu: seller.current_menu.present?
+          currently_active: seller.currently_active,
+          has_current_menu: seller.current_menu.present?
         }
       end
 
@@ -85,9 +84,9 @@ module Api
           followers_count: seller.followers_count,
           verified: seller.verified,
           currently_active: seller.currently_active,
-          last_active_at: seller.last_active_at
-          # TODO: Add current_menu and current_location when models are created
-          # current_menu: seller.current_menu ? menu_summary(seller.current_menu) : nil,
+          last_active_at: seller.last_active_at,
+          current_menu: seller.current_menu ? menu_summary(seller.current_menu) : nil
+          # TODO: Add current_location when selling_locations model is created
           # current_location: seller.current_location ? location_summary(seller.current_location) : nil
         }
       end
@@ -95,10 +94,12 @@ module Api
       def menu_summary(menu)
         {
           id: menu.id,
-          dish_name: menu.dish_name,
-          price: menu.price.to_f,
+          title: menu.title,
           description: menu.description,
-          remaining_quantity: menu.remaining_quantity
+          available_from: menu.available_from,
+          available_until: menu.available_until,
+          dishes_count: menu.weekly_menu_dishes.count,
+          total_available_quantity: menu.total_available_quantity
         }
       end
 
