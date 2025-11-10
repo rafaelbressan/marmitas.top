@@ -1,4 +1,8 @@
 class SellerProfile < ApplicationRecord
+  # Broadcast duration constants (configurable business logic)
+  DEFAULT_BROADCAST_DURATION = 12.hours
+  MAX_BROADCAST_DURATION = 96.hours
+
   # Associations
   belongs_to :user
   has_many :dishes, dependent: :destroy
@@ -18,7 +22,7 @@ class SellerProfile < ApplicationRecord
   # Validations
   validates :business_name, presence: true
   validates :user_id, uniqueness: true
-  validate :leaving_at_within_96_hours, if: -> { leaving_at.present? && arrived_at.present? }
+  validate :leaving_at_within_max_duration, if: -> { leaving_at.present? && arrived_at.present? }
 
   # Scopes
   scope :verified, -> { where(verified: true) }
@@ -51,13 +55,16 @@ class SellerProfile < ApplicationRecord
   def announce_arrival(location_id, leaving_at: nil)
     location = selling_locations.find(location_id)
 
+    # Default to DEFAULT_BROADCAST_DURATION (12 hours) if no leaving_at specified
+    computed_leaving_at = leaving_at || (Time.current + DEFAULT_BROADCAST_DURATION)
+
     transaction do
       update!(
         current_location_id: location_id,
         currently_active: true,
         last_active_at: Time.current,
         arrived_at: Time.current,
-        leaving_at: leaving_at
+        leaving_at: computed_leaving_at
       )
       # TODO: activity_logs.create!(activity_type: 'arrived', selling_location_id: location_id, occurred_at: Time.current)
       # TODO: notify_followers(:arrival)
@@ -100,11 +107,12 @@ class SellerProfile < ApplicationRecord
 
   private
 
-  def leaving_at_within_96_hours
+  def leaving_at_within_max_duration
     if leaving_at <= arrived_at
       errors.add(:leaving_at, "must be after arrival time")
-    elsif leaving_at > arrived_at + 96.hours
-      errors.add(:leaving_at, "cannot be more than 96 hours after arrival")
+    elsif leaving_at > arrived_at + MAX_BROADCAST_DURATION
+      max_hours = (MAX_BROADCAST_DURATION / 1.hour).to_i
+      errors.add(:leaving_at, "cannot be more than #{max_hours} hours after arrival")
     end
   end
 

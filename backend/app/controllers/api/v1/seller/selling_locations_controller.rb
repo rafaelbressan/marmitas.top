@@ -128,9 +128,10 @@ module Api
             Time.parse(params[:leaving_at])
           elsif params[:hours_from_now].present?
             hours = params[:hours_from_now].to_f
-            if hours > 96
+            max_hours = (SellerProfile::MAX_BROADCAST_DURATION / 1.hour).to_i
+            if hours > max_hours
               raise ActiveRecord::RecordInvalid.new(current_user.seller_profile.tap { |sp|
-                sp.errors.add(:leaving_at, "cannot be more than 96 hours from now")
+                sp.errors.add(:leaving_at, "cannot be more than #{max_hours} hours from now")
               })
             end
             Time.current + hours.hours
