@@ -65,6 +65,16 @@ Rails.application.routes.draw do
         end
       end
 
+      # Device Tokens (for push notifications)
+      resources :device_tokens, only: [:index, :create, :destroy] do
+        collection do
+          post :deactivate_all
+        end
+      end
+
+      # Notification Preferences
+      resource :notification_preferences, only: [:show, :update]
+
       # Future routes
       # resources :reviews, only: [:index, :create, :update, :destroy]
     end

@@ -67,8 +67,10 @@ class SellerProfile < ApplicationRecord
         leaving_at: computed_leaving_at
       )
       # TODO: activity_logs.create!(activity_type: 'arrived', selling_location_id: location_id, occurred_at: Time.current)
-      # TODO: notify_followers(:arrival)
     end
+
+    # Send push notifications to followers (async to avoid slowing down the response)
+    NotifyFollowersJob.perform_later(id, 'arrival') rescue nil
 
     self
   end

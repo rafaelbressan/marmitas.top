@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_10_002042) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_10_003649) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -40,6 +40,20 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_002042) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "device_tokens", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.string "device_name"
+    t.datetime "last_used_at"
+    t.string "platform", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["token"], name: "index_device_tokens_on_token"
+    t.index ["user_id", "token", "platform"], name: "index_device_tokens_uniqueness", unique: true
+    t.index ["user_id"], name: "index_device_tokens_on_user_id"
   end
 
   create_table "dishes", force: :cascade do |t|
@@ -127,6 +141,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_002042) do
     t.boolean "is_admin", default: false, null: false
     t.datetime "last_seen_at"
     t.string "name", null: false
+    t.jsonb "notification_preferences", default: {"new_menus"=>true, "promotions"=>false, "order_updates"=>true, "seller_arrivals"=>true}, null: false
     t.string "phone"
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
@@ -172,6 +187,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_002042) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "device_tokens", "users"
   add_foreign_key "dishes", "seller_profiles"
   add_foreign_key "favorites", "users"
   add_foreign_key "seller_profiles", "selling_locations", column: "current_location_id"
