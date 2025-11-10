@@ -28,20 +28,35 @@ class SellerProfile < ApplicationRecord
   scope :verified, -> { where(verified: true) }
   scope :active, -> { where(currently_active: true) }
   scope :in_city, ->(city) { where(city: city) }
-  # TODO: Uncomment when selling_locations model is created
-  # scope :nearby, ->(lat, lng, radius_km = 5) {
-  #   joins(:selling_locations)
-  #     .where(currently_active: true)
-  #     .where(
-  #       "ST_DWithin(
-  #         ST_MakePoint(selling_locations.longitude, selling_locations.latitude)::geography,
-  #         ST_MakePoint(?, ?)::geography,
-  #         ?
-  #       )",
-  #       lng, lat, radius_km * 1000
-  #     )
-  #     .distinct
-  # }
+
+  # Find active sellers nearby using PostGIS geography calculations
+  # Returns sellers within radius_km of the given latitude/longitude
+  # Only includes sellers who are currently active and broadcasting their location
+  def self.nearby(lat, lng, radius_km = 5)
+    joins(:current_location)
+      .where(currently_active: true)
+      .where(
+        sanitize_sql_array([
+          "ST_DWithin(
+            selling_locations.lonlat,
+            ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+            ?
+          )",
+          lng, lat, radius_km * 1000
+        ])
+      )
+      .select(
+        "seller_profiles.*",
+        sanitize_sql_array([
+          "(ST_Distance(
+            selling_locations.lonlat,
+            ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+          ) / 1000.0) AS distance_km",
+          lng, lat
+        ])
+      )
+      .order('distance_km ASC')
+  end
 
   # Callbacks
   after_commit :update_stats, on: [:create, :update]

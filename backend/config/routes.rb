@@ -75,6 +75,10 @@ Rails.application.routes.draw do
       # Notification Preferences
       resource :notification_preferences, only: [:show, :update]
 
+      # Map endpoints (GeoJSON-compatible)
+      get 'map/sellers', to: 'map#sellers'
+      get 'map/bounds', to: 'map#bounds'
+
       # Future routes
       # resources :reviews, only: [:index, :create, :update, :destroy]
     end

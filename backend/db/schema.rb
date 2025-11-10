@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_10_003649) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_10_010319) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "postgis"
 
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
@@ -120,17 +121,16 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_003649) do
     t.index ["verified"], name: "index_seller_profiles_on_verified"
   end
 
-  create_table "selling_locations", force: :cascade do |t|
-    t.text "address"
-    t.datetime "created_at", null: false
-    t.decimal "latitude", precision: 10, scale: 6
-    t.decimal "longitude", precision: 10, scale: 6
-    t.string "name", null: false
-    t.text "notes"
-    t.bigint "seller_profile_id", null: false
-    t.datetime "updated_at", null: false
-    t.index ["seller_profile_id", "name"], name: "index_selling_locations_on_seller_profile_id_and_name"
-    t.index ["seller_profile_id"], name: "index_selling_locations_on_seller_profile_id"
+# Could not dump table "selling_locations" because of following StandardError
+#   Unknown type 'geography' for column 'lonlat'
+
+
+  create_table "spatial_ref_sys", primary_key: "srid", id: :integer, default: nil, force: :cascade do |t|
+    t.string "auth_name", limit: 256
+    t.integer "auth_srid"
+    t.string "proj4text", limit: 2048
+    t.string "srtext", limit: 2048
+    t.check_constraint "srid > 0 AND srid <= 998999", name: "spatial_ref_sys_srid_check"
   end
 
   create_table "users", force: :cascade do |t|

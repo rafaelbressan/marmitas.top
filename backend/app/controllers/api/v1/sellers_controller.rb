@@ -43,24 +43,31 @@ module Api
         lng = params[:longitude].to_f
         radius = params[:radius]&.to_f || 5.0
 
-        # TODO: Implement PostGIS-based nearby search when selling_locations model is created
-        # For now, return verified and active sellers
-        @sellers = SellerProfile.verified.active
-                                 .includes(:user)
+        # Use PostGIS-based nearby search
+        @sellers = SellerProfile.verified
+                                 .nearby(lat, lng, radius)
+                                 .includes(:user, :current_location)
+                                 .limit(50)
 
-        # Prioritize favorited sellers if user is authenticated
+        # Apply favorited sellers priority
         if current_user.present?
           favorited_ids = current_user.favorited_sellers.pluck(:id)
-          @sellers = @sellers.order(
-            Arel.sql("CASE WHEN seller_profiles.id IN (#{favorited_ids.any? ? favorited_ids.join(',') : '0'}) THEN 0 ELSE 1 END"),
-            last_active_at: :desc
-          )
+
+          # Re-sort to prioritize favorited sellers, then by distance
+          sellers_array = @sellers.to_a
+          favorited_sellers = sellers_array.select { |s| favorited_ids.include?(s.id) }
+          non_favorited_sellers = sellers_array.reject { |s| favorited_ids.include?(s.id) }
+
+          @sellers = favorited_sellers + non_favorited_sellers
         end
 
-        @sellers = @sellers.limit(50)
-
         render json: {
-          sellers: @sellers.map { |seller| seller_summary(seller) }
+          sellers: @sellers.map { |seller| seller_summary(seller, include_distance: true) },
+          search_params: {
+            latitude: lat,
+            longitude: lng,
+            radius_km: radius
+          }
         }, status: :ok
       end
 
@@ -73,7 +80,7 @@ module Api
         scope
       end
 
-      def seller_summary(seller)
+      def seller_summary(seller, include_distance: false)
         summary = {
           id: seller.id,
           business_name: seller.business_name,
@@ -88,6 +95,23 @@ module Api
           currently_active: seller.currently_active,
           has_current_menu: seller.current_menu.present?
         }
+
+        # Include distance if available (from nearby search)
+        if include_distance && seller.respond_to?(:distance_km)
+          summary[:distance_km] = seller.distance_km.to_f.round(2)
+        end
+
+        # Include current location for map display
+        if seller.current_location.present?
+          summary[:current_location] = {
+            id: seller.current_location.id,
+            name: seller.current_location.name,
+            address: seller.current_location.address,
+            latitude: seller.current_location.latitude,
+            longitude: seller.current_location.longitude
+          }
+        end
+
         summary[:is_favorited] = current_user.favorited?(seller) if current_user.present?
         summary
       end
