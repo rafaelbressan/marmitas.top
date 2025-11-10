@@ -7,6 +7,16 @@ module Api
       def index
         @sellers = SellerProfile.verified.includes(:user)
         @sellers = apply_filters(@sellers)
+
+        # Prioritize favorited sellers if user is authenticated
+        if current_user.present?
+          favorited_ids = current_user.favorited_sellers.pluck(:id)
+          @sellers = @sellers.order(
+            Arel.sql("CASE WHEN seller_profiles.id IN (#{favorited_ids.any? ? favorited_ids.join(',') : '0'}) THEN 0 ELSE 1 END"),
+            created_at: :desc
+          )
+        end
+
         @sellers = @sellers.page(params[:page]).per(params[:per_page] || 20)
 
         render json: {
@@ -37,7 +47,17 @@ module Api
         # For now, return verified and active sellers
         @sellers = SellerProfile.verified.active
                                  .includes(:user)
-                                 .limit(50)
+
+        # Prioritize favorited sellers if user is authenticated
+        if current_user.present?
+          favorited_ids = current_user.favorited_sellers.pluck(:id)
+          @sellers = @sellers.order(
+            Arel.sql("CASE WHEN seller_profiles.id IN (#{favorited_ids.any? ? favorited_ids.join(',') : '0'}) THEN 0 ELSE 1 END"),
+            last_active_at: :desc
+          )
+        end
+
+        @sellers = @sellers.limit(50)
 
         render json: {
           sellers: @sellers.map { |seller| seller_summary(seller) }
@@ -54,7 +74,7 @@ module Api
       end
 
       def seller_summary(seller)
-        {
+        summary = {
           id: seller.id,
           business_name: seller.business_name,
           bio: seller.bio&.truncate(150),
@@ -63,14 +83,17 @@ module Api
           average_rating: seller.average_rating.to_f,
           reviews_count: seller.reviews_count,
           followers_count: seller.followers_count,
+          favorites_count: seller.favorites_count,
           verified: seller.verified,
           currently_active: seller.currently_active,
           has_current_menu: seller.current_menu.present?
         }
+        summary[:is_favorited] = current_user.favorited?(seller) if current_user.present?
+        summary
       end
 
       def seller_detail(seller)
-        {
+        detail = {
           id: seller.id,
           business_name: seller.business_name,
           bio: seller.bio,
@@ -82,6 +105,7 @@ module Api
           average_rating: seller.average_rating.to_f,
           reviews_count: seller.reviews_count,
           followers_count: seller.followers_count,
+          favorites_count: seller.favorites_count,
           verified: seller.verified,
           currently_active: seller.currently_active,
           last_active_at: seller.last_active_at,
@@ -91,6 +115,8 @@ module Api
           current_location: seller.current_location ? location_summary(seller.current_location) : nil,
           selling_locations: seller.selling_locations.map { |loc| location_summary(loc) }
         }
+        detail[:is_favorited] = current_user.favorited?(seller) if current_user.present?
+        detail
       end
 
       def menu_summary(menu)

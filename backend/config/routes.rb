@@ -32,7 +32,11 @@ Rails.application.routes.draw do
       namespace :seller do
         resource :profile, only: [:show, :create, :update, :destroy]
 
-        resources :dishes, only: [:index, :show, :create, :update, :destroy]
+        resources :dishes, only: [:index, :show, :create, :update, :destroy] do
+          collection do
+            get :favorites_stats
+          end
+        end
 
         resources :weekly_menus, only: [:index, :show, :create, :update, :destroy] do
           member do
@@ -51,8 +55,17 @@ Rails.application.routes.draw do
         end
       end
 
+      # Favorites
+      resources :favorites, only: [:index, :create, :destroy] do
+        collection do
+          get :dishes
+          get :sellers
+          delete :remove
+          get :check
+        end
+      end
+
       # Future routes
-      # resources :favorites, only: [:index, :create, :destroy]
       # resources :reviews, only: [:index, :create, :update, :destroy]
     end
   end

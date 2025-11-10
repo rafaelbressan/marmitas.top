@@ -14,6 +14,29 @@ module Api
           }, status: :ok
         end
 
+        # GET /api/v1/seller/dishes/favorites_stats
+        def favorites_stats
+          @dishes = current_user.seller_profile.dishes
+                                .order(favorites_count: :desc)
+                                .limit(params[:limit] || 10)
+
+          total_favorites = current_user.seller_profile.dishes.sum(:favorites_count)
+
+          render json: {
+            total_favorites: total_favorites,
+            top_dishes: @dishes.map { |dish|
+              {
+                id: dish.id,
+                name: dish.name,
+                favorites_count: dish.favorites_count,
+                base_price: dish.base_price.to_f,
+                active: dish.active,
+                percentage: total_favorites > 0 ? ((dish.favorites_count.to_f / total_favorites) * 100).round(2) : 0
+              }
+            }
+          }, status: :ok
+        end
+
         # GET /api/v1/seller/dishes/:id
         def show
           render json: { dish: dish_response(@dish) }, status: :ok
@@ -99,6 +122,7 @@ module Api
             dietary_tags: dish.dietary_tags,
             dietary_tags_display: dish.dietary_tags_display,
             active: dish.active,
+            favorites_count: dish.favorites_count,
             photos: dish.photos.attached? ? dish.photos.map { |photo| rails_blob_url(photo) } : [],
             created_at: dish.created_at,
             updated_at: dish.updated_at

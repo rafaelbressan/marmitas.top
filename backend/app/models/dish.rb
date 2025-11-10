@@ -3,6 +3,8 @@ class Dish < ApplicationRecord
   belongs_to :seller_profile
   has_many :weekly_menu_dishes, dependent: :destroy
   has_many :weekly_menus, through: :weekly_menu_dishes
+  has_many :favorites, as: :favoritable, dependent: :destroy
+  has_many :favorited_by, through: :favorites, source: :user
 
   # Active Storage
   has_many_attached :photos

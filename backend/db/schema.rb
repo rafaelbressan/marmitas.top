@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_09_234001) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_10_002042) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -48,12 +48,24 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_09_234001) do
     t.datetime "created_at", null: false
     t.text "description"
     t.jsonb "dietary_tags", default: []
+    t.integer "favorites_count", default: 0, null: false
     t.string "name", null: false
     t.bigint "seller_profile_id", null: false
     t.datetime "updated_at", null: false
     t.index ["active"], name: "index_dishes_on_active"
     t.index ["seller_profile_id", "name"], name: "index_dishes_on_seller_profile_id_and_name"
     t.index ["seller_profile_id"], name: "index_dishes_on_seller_profile_id"
+  end
+
+  create_table "favorites", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "favoritable_id", null: false
+    t.string "favoritable_type", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["favoritable_type", "favoritable_id"], name: "index_favorites_on_favoritable"
+    t.index ["user_id", "favoritable_type", "favoritable_id"], name: "index_favorites_uniqueness", unique: true
+    t.index ["user_id"], name: "index_favorites_on_user_id"
   end
 
   create_table "jwt_denylists", force: :cascade do |t|
@@ -73,6 +85,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_09_234001) do
     t.datetime "created_at", null: false
     t.bigint "current_location_id"
     t.boolean "currently_active", default: false, null: false
+    t.integer "favorites_count", default: 0, null: false
     t.integer "followers_count", default: 0, null: false
     t.datetime "last_active_at"
     t.datetime "leaving_at"
@@ -160,6 +173,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_09_234001) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "dishes", "seller_profiles"
+  add_foreign_key "favorites", "users"
   add_foreign_key "seller_profiles", "selling_locations", column: "current_location_id"
   add_foreign_key "seller_profiles", "users"
   add_foreign_key "selling_locations", "seller_profiles"

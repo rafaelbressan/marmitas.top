@@ -9,9 +9,9 @@ class SellerProfile < ApplicationRecord
   has_many :weekly_menus, dependent: :destroy
   has_many :selling_locations, dependent: :destroy
   belongs_to :current_location, class_name: 'SellingLocation', optional: true
+  has_many :favorites, as: :favoritable, dependent: :destroy
+  has_many :followers, through: :favorites, source: :user
   # TODO: Uncomment when models are created
-  # has_many :favorites, dependent: :destroy
-  # has_many :followers, through: :favorites, source: :user
   # has_many :reviews, dependent: :destroy
   # has_many :activity_logs, dependent: :destroy
 
