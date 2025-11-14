@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_10_010319) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_14_144337) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "postgis"
@@ -91,6 +91,52 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_010319) do
     t.index ["jti"], name: "index_jwt_denylists_on_jti", unique: true
   end
 
+  create_table "review_helpfuls", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "review_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["review_id", "user_id"], name: "index_review_helpfuls_on_review_id_and_user_id", unique: true
+    t.index ["review_id"], name: "index_review_helpfuls_on_review_id"
+    t.index ["user_id"], name: "index_review_helpfuls_on_user_id"
+  end
+
+  create_table "reviews", force: :cascade do |t|
+    t.text "comment"
+    t.datetime "created_at", null: false
+    t.string "dish_name"
+    t.integer "edit_count", default: 0
+    t.date "encounter_date", null: false
+    t.decimal "encounter_latitude", precision: 10, scale: 6
+    t.decimal "encounter_longitude", precision: 10, scale: 6
+    t.datetime "encounter_timestamp"
+    t.string "flag_reason"
+    t.boolean "flagged", default: false
+    t.integer "helpful_count", default: 0
+    t.datetime "last_edited_at"
+    t.datetime "moderated_at"
+    t.bigint "moderated_by_id"
+    t.text "moderation_note"
+    t.string "moderation_status", default: "published"
+    t.integer "rating", null: false
+    t.bigint "seller_profile_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.boolean "verified_encounter", default: false
+    t.bigint "weekly_menu_id"
+    t.index ["created_at"], name: "index_reviews_on_created_at"
+    t.index ["encounter_date"], name: "index_reviews_on_encounter_date"
+    t.index ["flagged"], name: "index_reviews_on_flagged"
+    t.index ["moderated_by_id"], name: "index_reviews_on_moderated_by_id"
+    t.index ["moderation_status"], name: "index_reviews_on_moderation_status"
+    t.index ["rating"], name: "index_reviews_on_rating"
+    t.index ["seller_profile_id"], name: "index_reviews_on_seller_profile_id"
+    t.index ["user_id", "seller_profile_id", "encounter_date"], name: "index_reviews_on_user_seller_date", unique: true
+    t.index ["user_id"], name: "index_reviews_on_user_id"
+    t.index ["weekly_menu_id"], name: "index_reviews_on_weekly_menu_id"
+    t.check_constraint "rating >= 1 AND rating <= 5", name: "reviews_rating_range"
+  end
+
   create_table "seller_profiles", force: :cascade do |t|
     t.datetime "arrived_at"
     t.decimal "average_rating", precision: 3, scale: 2, default: "0.0"
@@ -106,6 +152,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_010319) do
     t.datetime "leaving_at"
     t.jsonb "operating_hours", default: {}
     t.string "phone"
+    t.integer "rating_1_count", default: 0
+    t.integer "rating_2_count", default: 0
+    t.integer "rating_3_count", default: 0
+    t.integer "rating_4_count", default: 0
+    t.integer "rating_5_count", default: 0
     t.integer "reviews_count", default: 0, null: false
     t.string "state"
     t.datetime "updated_at", null: false
@@ -113,6 +164,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_010319) do
     t.boolean "verified", default: false, null: false
     t.string "whatsapp"
     t.index ["arrived_at"], name: "index_seller_profiles_on_arrived_at"
+    t.index ["average_rating"], name: "index_seller_profiles_on_average_rating"
     t.index ["city"], name: "index_seller_profiles_on_city"
     t.index ["current_location_id"], name: "index_seller_profiles_on_current_location_id"
     t.index ["currently_active"], name: "index_seller_profiles_on_currently_active"
@@ -173,6 +225,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_010319) do
     t.datetime "available_from", null: false
     t.datetime "available_until", null: false
     t.datetime "created_at", null: false
+    t.datetime "deleted_at"
     t.text "description"
     t.bigint "seller_profile_id", null: false
     t.string "title"
@@ -181,6 +234,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_010319) do
     t.index ["active"], name: "index_weekly_menus_on_active"
     t.index ["available_from"], name: "index_weekly_menus_on_available_from"
     t.index ["available_until"], name: "index_weekly_menus_on_available_until"
+    t.index ["deleted_at"], name: "index_weekly_menus_on_deleted_at"
     t.index ["seller_profile_id", "available_from"], name: "index_weekly_menus_on_seller_profile_id_and_available_from"
     t.index ["seller_profile_id"], name: "index_weekly_menus_on_seller_profile_id"
   end
@@ -190,6 +244,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_010319) do
   add_foreign_key "device_tokens", "users"
   add_foreign_key "dishes", "seller_profiles"
   add_foreign_key "favorites", "users"
+  add_foreign_key "review_helpfuls", "reviews"
+  add_foreign_key "review_helpfuls", "users"
+  add_foreign_key "reviews", "seller_profiles"
+  add_foreign_key "reviews", "users"
+  add_foreign_key "reviews", "users", column: "moderated_by_id"
+  add_foreign_key "reviews", "weekly_menus"
   add_foreign_key "seller_profiles", "selling_locations", column: "current_location_id"
   add_foreign_key "seller_profiles", "users"
   add_foreign_key "selling_locations", "seller_profiles"

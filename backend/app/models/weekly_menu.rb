@@ -3,28 +3,58 @@ class WeeklyMenu < ApplicationRecord
   belongs_to :seller_profile
   has_many :weekly_menu_dishes, dependent: :destroy
   has_many :dishes, through: :weekly_menu_dishes
+  has_many :reviews, dependent: :nullify  # Reviews persist even if menu is deleted
 
   # Validations
   validates :available_from, presence: true
   validates :available_until, presence: true
   validate :available_until_after_available_from
 
+  # Soft delete scopes
+  scope :not_deleted, -> { where(deleted_at: nil) }
+  scope :deleted, -> { where.not(deleted_at: nil) }
+
   # Scopes
-  scope :active, -> { where(active: true) }
+  scope :active, -> { where(active: true).not_deleted }
   scope :for_seller, ->(seller_profile_id) { where(seller_profile_id: seller_profile_id) }
   scope :available_now, -> {
     where('available_from <= ? AND available_until >= ?', Time.current, Time.current)
       .where(active: true)
+      .not_deleted
   }
   scope :upcoming, -> {
     where('available_from > ?', Time.current)
       .where(active: true)
+      .not_deleted
       .order(available_from: :asc)
   }
   scope :past, -> {
     where('available_until < ?', Time.current)
+      .not_deleted
       .order(available_from: :desc)
   }
+
+  # Soft delete methods
+  def soft_delete
+    update_column(:deleted_at, Time.current)
+  end
+
+  def restore!
+    update_column(:deleted_at, nil)
+  end
+
+  def deleted?
+    deleted_at.present?
+  end
+
+  # Override destroy to use soft delete
+  def destroy
+    soft_delete
+  end
+
+  def destroy!
+    soft_delete || raise(ActiveRecord::RecordNotDestroyed.new("Failed to destroy the record", self))
+  end
 
   # Check if menu is currently available
   def available?

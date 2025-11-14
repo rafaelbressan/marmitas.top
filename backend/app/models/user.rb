@@ -11,6 +11,7 @@ class User < ApplicationRecord
   has_many :favorited_dishes, -> { where(favorites: { favoritable_type: 'Dish' }) }, through: :favorites, source: :favoritable, source_type: 'Dish'
   has_many :favorited_sellers, -> { where(favorites: { favoritable_type: 'SellerProfile' }) }, through: :favorites, source: :favoritable, source_type: 'SellerProfile'
   has_many :reviews, dependent: :destroy
+  has_many :review_helpfuls, dependent: :destroy
   has_many :device_tokens, dependent: :destroy
 
   # Validations

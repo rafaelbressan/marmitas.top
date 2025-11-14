@@ -79,8 +79,27 @@ Rails.application.routes.draw do
       get 'map/sellers', to: 'map#sellers'
       get 'map/bounds', to: 'map#bounds'
 
-      # Future routes
-      # resources :reviews, only: [:index, :create, :update, :destroy]
+      # Reviews
+      resources :sellers, only: [] do
+        resources :reviews, only: [:index, :create]
+      end
+
+      resources :reviews, only: [:show, :update, :destroy] do
+        member do
+          post :flag
+          post :helpful
+        end
+      end
+
+      # Admin routes
+      namespace :admin do
+        resources :reviews, only: [:index, :show] do
+          member do
+            post :approve
+            post :remove
+          end
+        end
+      end
     end
   end
 
