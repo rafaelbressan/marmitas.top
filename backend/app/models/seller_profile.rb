@@ -11,8 +11,8 @@ class SellerProfile < ApplicationRecord
   belongs_to :current_location, class_name: 'SellingLocation', optional: true
   has_many :favorites, as: :favoritable, dependent: :destroy
   has_many :followers, through: :favorites, source: :user
-  # TODO: Uncomment when models are created
-  # has_many :reviews, dependent: :destroy
+  has_many :reviews, dependent: :destroy
+  # TODO: Uncomment when model is created
   # has_many :activity_logs, dependent: :destroy
 
   # Active Storage
@@ -122,7 +122,114 @@ class SellerProfile < ApplicationRecord
     end
   end
 
+  # Rating and review methods
+
+  # Calculate weighted average rating
+  # Recent reviews (last 30 days) weighted 60%
+  # Medium reviews (30-90 days) weighted 30%
+  # Old reviews (90+ days) weighted 10%
+  def recalculate_ratings!
+    published_reviews = reviews.published
+
+    # Get reviews grouped by age
+    recent_reviews = published_reviews.recent.to_a
+    medium_reviews = published_reviews.medium.to_a
+    old_reviews = published_reviews.old.to_a
+
+    return set_no_rating if published_reviews.count < 5
+
+    # Calculate weighted average
+    recent_sum = recent_reviews.sum(&:rating).to_f
+    recent_count = recent_reviews.count
+    medium_sum = medium_reviews.sum(&:rating).to_f
+    medium_count = medium_reviews.count
+    old_sum = old_reviews.sum(&:rating).to_f
+    old_count = old_reviews.count
+
+    recent_avg = recent_count > 0 ? recent_sum / recent_count : 0
+    medium_avg = medium_count > 0 ? medium_sum / medium_count : 0
+    old_avg = old_count > 0 ? old_sum / old_count : 0
+
+    # Weighted calculation
+    weighted_sum = (recent_avg * recent_count * 0.6) +
+                   (medium_avg * medium_count * 0.3) +
+                   (old_avg * old_count * 0.1)
+
+    weighted_total = (recent_count * 0.6) + (medium_count * 0.3) + (old_count * 0.1)
+
+    new_average = weighted_total > 0 ? (weighted_sum / weighted_total).round(2) : 0.0
+
+    # Update rating distribution
+    distribution = published_reviews.group(:rating).count
+
+    update_columns(
+      average_rating: new_average,
+      reviews_count: published_reviews.count,
+      rating_1_count: distribution[1] || 0,
+      rating_2_count: distribution[2] || 0,
+      rating_3_count: distribution[3] || 0,
+      rating_4_count: distribution[4] || 0,
+      rating_5_count: distribution[5] || 0
+    )
+  end
+
+  # Get rating distribution as hash
+  def rating_distribution
+    {
+      1 => rating_1_count,
+      2 => rating_2_count,
+      3 => rating_3_count,
+      4 => rating_4_count,
+      5 => rating_5_count
+    }
+  end
+
+  # Check if rating should be displayed (minimum 5 reviews)
+  def display_rating?
+    reviews_count >= 5
+  end
+
+  # Get formatted rating display
+  def rating_display
+    if display_rating?
+      "⭐ #{average_rating} (#{reviews_count} avaliações)"
+    else
+      "Novo vendedor (#{reviews_count} #{'avaliação'.pluralize(reviews_count)})"
+    end
+  end
+
+  # Calculate rating trend (positive, negative, or stable)
+  def rating_trend
+    return :stable if reviews_count < 10
+
+    recent = reviews.published.recent.average(:rating).to_f
+    old = reviews.published.where('created_at < ?', 30.days.ago).average(:rating).to_f
+
+    return :stable if recent == 0 || old == 0
+
+    difference = recent - old
+
+    if difference >= 0.3
+      :improving
+    elsif difference <= -0.3
+      :declining
+    else
+      :stable
+    end
+  end
+
   private
+
+  def set_no_rating
+    update_columns(
+      average_rating: 0.0,
+      rating_1_count: 0,
+      rating_2_count: 0,
+      rating_3_count: 0,
+      rating_4_count: 0,
+      rating_5_count: 0
+    )
+  end
 
   def leaving_at_within_max_duration
     if leaving_at <= arrived_at
