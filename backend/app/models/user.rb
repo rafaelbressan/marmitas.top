@@ -13,6 +13,7 @@ class User < ApplicationRecord
   has_many :reviews, dependent: :destroy
   has_many :review_helpfuls, dependent: :destroy
   has_many :device_tokens, dependent: :destroy
+  has_many :orders, dependent: :destroy
 
   # Validations
   validates :name, presence: true

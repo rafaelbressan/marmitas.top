@@ -5,6 +5,7 @@ class Dish < ApplicationRecord
   has_many :weekly_menus, through: :weekly_menu_dishes
   has_many :favorites, as: :favoritable, dependent: :destroy
   has_many :favorited_by, through: :favorites, source: :user
+  has_many :order_items, dependent: :restrict_with_error
 
   # Active Storage
   has_many_attached :photos

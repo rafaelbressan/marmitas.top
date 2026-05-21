@@ -12,6 +12,7 @@ class SellerProfile < ApplicationRecord
   has_many :favorites, as: :favoritable, dependent: :destroy
   has_many :followers, through: :favorites, source: :user
   has_many :reviews, dependent: :destroy
+  has_many :orders, dependent: :restrict_with_error
   # TODO: Uncomment when model is created
   # has_many :activity_logs, dependent: :destroy
 

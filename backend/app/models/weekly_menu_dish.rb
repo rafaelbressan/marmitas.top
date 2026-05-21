@@ -2,6 +2,7 @@ class WeeklyMenuDish < ApplicationRecord
   # Associations
   belongs_to :weekly_menu
   belongs_to :dish
+  has_many :order_items, dependent: :restrict_with_error
 
   # Validations
   validates :available_quantity, presence: true, numericality: { greater_than: 0 }
