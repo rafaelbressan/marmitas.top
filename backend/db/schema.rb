@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_14_144337) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_21_015534) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "postgis"
@@ -91,6 +91,58 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_14_144337) do
     t.index ["jti"], name: "index_jwt_denylists_on_jti", unique: true
   end
 
+  create_table "order_items", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "dish_description_snapshot"
+    t.bigint "dish_id", null: false
+    t.string "dish_name_snapshot", null: false
+    t.bigint "order_id", null: false
+    t.integer "quantity", null: false
+    t.decimal "subtotal", precision: 10, scale: 2, null: false
+    t.decimal "unit_price", precision: 10, scale: 2, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "weekly_menu_dish_id"
+    t.index ["dish_id"], name: "index_order_items_on_dish_id"
+    t.index ["order_id"], name: "index_order_items_on_order_id"
+    t.index ["weekly_menu_dish_id"], name: "index_order_items_on_weekly_menu_dish_id"
+    t.check_constraint "quantity > 0", name: "order_items_quantity_positive"
+  end
+
+  create_table "orders", force: :cascade do |t|
+    t.datetime "archived_at"
+    t.text "cancellation_reason"
+    t.datetime "cancelled_at"
+    t.datetime "completed_at"
+    t.string "completion_code", limit: 6
+    t.datetime "confirmed_at"
+    t.datetime "created_at", null: false
+    t.decimal "customer_latitude", precision: 10, scale: 6
+    t.decimal "customer_longitude", precision: 10, scale: 6
+    t.decimal "delivery_fee", precision: 10, scale: 2, default: "0.0"
+    t.datetime "expired_at"
+    t.datetime "order_date", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.datetime "pickup_expires_at"
+    t.decimal "seller_latitude", precision: 10, scale: 6
+    t.string "seller_location_name"
+    t.decimal "seller_longitude", precision: 10, scale: 6
+    t.bigint "seller_profile_id", null: false
+    t.string "status", default: "pending", null: false
+    t.decimal "total_price", precision: 10, scale: 2, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.bigint "weekly_menu_id"
+    t.index ["order_date"], name: "index_orders_on_order_date"
+    t.index ["pickup_expires_at"], name: "index_orders_on_pickup_expires_at"
+    t.index ["seller_profile_id", "order_date"], name: "index_orders_on_seller_profile_id_and_order_date"
+    t.index ["seller_profile_id", "status"], name: "index_orders_on_seller_profile_id_and_status"
+    t.index ["seller_profile_id"], name: "index_orders_on_seller_profile_id"
+    t.index ["status"], name: "index_orders_on_status"
+    t.index ["user_id", "order_date"], name: "index_orders_on_user_id_and_order_date"
+    t.index ["user_id"], name: "index_orders_on_user_id"
+    t.index ["weekly_menu_id"], name: "index_orders_on_weekly_menu_id"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'confirmed'::character varying, 'completed'::character varying, 'cancelled'::character varying, 'expired'::character varying]::text[])", name: "orders_status_check"
+  end
+
   create_table "review_helpfuls", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "review_id", null: false
@@ -143,13 +195,17 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_14_144337) do
     t.text "bio"
     t.string "business_name", null: false
     t.string "city"
+    t.integer "completed_orders_count", default: 0, null: false
     t.datetime "created_at", null: false
     t.bigint "current_location_id"
     t.boolean "currently_active", default: false, null: false
+    t.decimal "delivery_fee_amount", precision: 10, scale: 2
     t.integer "favorites_count", default: 0, null: false
     t.integer "followers_count", default: 0, null: false
+    t.integer "grace_period_minutes", default: 30, null: false
     t.datetime "last_active_at"
     t.datetime "leaving_at"
+    t.boolean "offers_delivery", default: false, null: false
     t.jsonb "operating_hours", default: {}
     t.string "phone"
     t.integer "rating_1_count", default: 0
@@ -159,6 +215,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_14_144337) do
     t.integer "rating_5_count", default: 0
     t.integer "reviews_count", default: 0, null: false
     t.string "state"
+    t.integer "total_orders_count", default: 0, null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.boolean "verified", default: false, null: false
@@ -169,6 +226,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_14_144337) do
     t.index ["current_location_id"], name: "index_seller_profiles_on_current_location_id"
     t.index ["currently_active"], name: "index_seller_profiles_on_currently_active"
     t.index ["leaving_at"], name: "index_seller_profiles_on_leaving_at"
+    t.index ["total_orders_count"], name: "index_seller_profiles_on_total_orders_count"
     t.index ["user_id"], name: "index_seller_profiles_on_user_id", unique: true
     t.index ["verified"], name: "index_seller_profiles_on_verified"
   end
@@ -194,6 +252,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_14_144337) do
     t.datetime "last_seen_at"
     t.string "name", null: false
     t.jsonb "notification_preferences", default: {"new_menus"=>true, "promotions"=>false, "order_updates"=>true, "seller_arrivals"=>true}, null: false
+    t.integer "orders_count", default: 0, null: false
     t.string "phone"
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
@@ -244,6 +303,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_14_144337) do
   add_foreign_key "device_tokens", "users"
   add_foreign_key "dishes", "seller_profiles"
   add_foreign_key "favorites", "users"
+  add_foreign_key "order_items", "dishes"
+  add_foreign_key "order_items", "orders"
+  add_foreign_key "order_items", "weekly_menu_dishes"
+  add_foreign_key "orders", "seller_profiles"
+  add_foreign_key "orders", "users"
+  add_foreign_key "orders", "weekly_menus"
   add_foreign_key "review_helpfuls", "reviews"
   add_foreign_key "review_helpfuls", "users"
   add_foreign_key "reviews", "seller_profiles"
