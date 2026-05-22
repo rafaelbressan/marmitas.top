@@ -91,6 +91,24 @@ Rails.application.routes.draw do
         end
       end
 
+      # Orders (consumer)
+      resources :orders, only: [:index, :show, :create] do
+        member do
+          delete :cancel
+          post :complete
+        end
+      end
+
+      # Seller orders management
+      namespace :seller do
+        resources :orders, only: [:index, :show] do
+          member do
+            patch :update_status
+            delete :cancel
+          end
+        end
+      end
+
       # Admin routes
       namespace :admin do
         resources :reviews, only: [:index, :show] do
