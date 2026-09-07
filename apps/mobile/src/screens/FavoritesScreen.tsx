@@ -9,9 +9,21 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import type { SectionListRenderItemInfo } from 'react-native';
 import { api } from '../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../constants';
 import type { Dish, SellerProfile } from '../types';
+
+// The list mixes favorited sellers and dishes in a single SectionList.
+type FavoriteItem = SellerProfile | Dish;
+
+interface FavoriteSection {
+  title: string;
+  data: FavoriteItem[];
+}
+
+// Only Dish carries the seller that owns it; SellerProfile is the seller itself.
+const isDish = (item: FavoriteItem): item is Dish => 'seller_profile' in item;
 
 export const FavoritesScreen: React.FC = () => {
   const [favoriteDishes, setFavoriteDishes] = useState<Dish[]>([]);
@@ -62,7 +74,7 @@ export const FavoritesScreen: React.FC = () => {
     }
   };
 
-  const renderDish = ({ item }: { item: Dish }) => (
+  const renderDish = (item: Dish) => (
     <View style={styles.dishCard}>
       <View style={styles.dishInfo}>
         <Text style={styles.dishName}>{item.name}</Text>
@@ -80,7 +92,7 @@ export const FavoritesScreen: React.FC = () => {
     </View>
   );
 
-  const renderSeller = ({ item }: { item: SellerProfile }) => (
+  const renderSeller = (item: SellerProfile) => (
     <View style={styles.sellerCard}>
       <View style={styles.sellerInfo}>
         <Text style={styles.businessName}>{item.business_name}</Text>
@@ -104,16 +116,17 @@ export const FavoritesScreen: React.FC = () => {
     </View>
   );
 
-  const sections = [
+  const renderItem = ({ item }: SectionListRenderItemInfo<FavoriteItem, FavoriteSection>) =>
+    isDish(item) ? renderDish(item) : renderSeller(item);
+
+  const sections: FavoriteSection[] = [
     {
       title: `Vendedores Favoritos (${favoriteSellers.length})`,
       data: favoriteSellers,
-      renderItem: renderSeller,
     },
     {
       title: `Pratos Favoritos (${favoriteDishes.length})`,
       data: favoriteDishes,
-      renderItem: renderDish,
     },
   ];
 
@@ -127,7 +140,7 @@ export const FavoritesScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <SectionList
+      <SectionList<FavoriteItem, FavoriteSection>
         sections={sections}
         keyExtractor={(item, index) => `${item.id}-${index}`}
         renderSectionHeader={({ section: { title } }) => (
@@ -135,7 +148,7 @@ export const FavoritesScreen: React.FC = () => {
             <Text style={styles.sectionTitle}>{title}</Text>
           </View>
         )}
-        renderItem={({ item, section }) => section.renderItem({ item })}
+        renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[COLORS.primary]} />

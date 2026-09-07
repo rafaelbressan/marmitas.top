@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -108,7 +108,7 @@ function MainTabNavigator() {
 function TabIcon({ icon, color }: { icon: string; color: string }) {
   return (
     <View style={{ width: 24, height: 24, justifyContent: 'center', alignItems: 'center' }}>
-      <View style={{ fontSize: 20 }}>{icon}</View>
+      <Text style={{ fontSize: 20, color }}>{icon}</Text>
     </View>
   );
 }
