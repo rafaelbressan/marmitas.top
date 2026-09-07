@@ -55,10 +55,10 @@ As interrupções que quebram esse fluxo, e que o app tem que tratar:
   anúncio quando o prazo vence** — ver §5, item 6. Ele fica no mapa a noite
   inteira, e o consumidor vai até um ponto vazio. Isso queima o produto para os
   dois lados.
-- **Ele muda de ponto no meio da semana.** Obra nova, praça diferente. E há quem
-  nem tenha ponto: anda por uma região o dia inteiro. O modelo hoje permite **no
-  máximo 3 pontos salvos** (`SellingLocation#maximum_locations_per_seller`), o que
-  atende o vendedor fixo e trava o ambulante. Como conciliar os dois está na §7.
+- **Nem todo marmiteiro tem ponto.** Uns vendem sempre nos mesmos 2 ou 3 lugares;
+  outros andam por uma região o dia inteiro e precisam transmitir a posição. O
+  modelo hoje só atende o primeiro: a posição vem de um lugar salvo e só muda com
+  `leave` + `arrive`. Os dois viram um conceito só na §7.
 
 ---
 
@@ -122,12 +122,12 @@ olhando um spinner na calçada.
 
 ### P0 — "Cheguei" (folha de baixo, não tela cheia)
 
-**Resolve:** escolher o ponto quando o GPS não decide sozinho (§7).
+**Resolve:** de onde vem a posição deste turno (§7).
 
-Não aparece quando ele está em cima de um ponto salvo, nem quando está longe de
-todos — nesses dois casos o botão da tela "Hoje" já resolve em 1 toque. Aparece
-só na dúvida: dois pontos salvos por perto. Lista o mais próximo no topo.
-Abaixo, "Até que horas?" com três atalhos: `2h`, `4h`, `até o fim do dia`.
+Uma lista só, com o último usado no topo: os pontos salvos dele **mais** a linha
+"Circulando por aí". Quem tem um jeito só de trabalhar nunca vê esta folha — o
+botão da tela "Hoje" repete o último turno em 1 toque. Abaixo, "Até que horas?"
+com três atalhos: `2h`, `4h`, `até o fim do dia`.
 
 **Endpoints:** `POST /seller/selling_locations/:id/arrive`
 (aceita `hours_from_now` ou `leaving_at`; teto de 96h em `MAX_BROADCAST_DURATION`)
@@ -229,8 +229,9 @@ Ele é as duas coisas. Muita gente que vende marmita também compra marmita.
 
 | Ação | Toques | Bloqueada? |
 |---|---|---|
-| Cheguei (1 ponto salvo) | 1 | não |
-| Cheguei (escolher entre 3) | 2 | não |
+| Cheguei (repetindo o último turno) | 1 | não |
+| Cheguei (escolher na lista: pontos + "circulando") | 2 | parcial — a linha "circulando" precisa da §5.7 |
+| Sai daqui pela notificação fixa, sem abrir o app | 1 | precisa do serviço em primeiro plano (§7) |
 | Sai daqui | 1 | não |
 | "Faltam 5" (baixar 1) | 1 | **sim — sem endpoint** |
 | "Acabou" | 1 | **sim — sem endpoint** |
@@ -277,12 +278,20 @@ Cada item aqui é uma issue de backend. Nenhum deles é contornável só com tel
    app: perguntar a duração no "Cheguei" (§3). Correção de verdade: um job
    recorrente no backend.
 
-7. **O teto de 3 pontos conta anúncio avulso.** `SellingLocation#maximum_locations_per_seller`
-   conta toda linha de `selling_locations`, e não existe coluna que separe "ponto
-   salvo" de "onde eu estou hoje" (`name` é `null: false`, sem flag). O ambulante
-   estoura o teto no quarto dia de uso. **Falta:** coluna `saved` e o teto contando
-   só `saved: true`. É a mudança que destrava a §7 — uma coluna e um escopo, sem
-   endpoint novo.
+7. **Não existe posição ao vivo, e o teto de 3 conta tudo.** Não há como o
+   ambulante transmitir onde está: a posição só muda com `leave` + `arrive`, e
+   `SellingLocation#maximum_locations_per_seller` conta toda linha de
+   `selling_locations`. **Falta:** coluna `kind` (`ponto` | `circulando`), com a
+   linha `circulando` fora do teto, e `PUT /api/v1/seller/position` para regravá-la
+   durante o turno, recusando fora de turno aberto. É o que destrava a §7 — uma
+   coluna e um endpoint, sem tocar no mapa.
+
+12. **Marmiteiro novo é invisível.** `seller_profiles.verified` nasce `false`
+    (migration `20251107212103`) e todas as rotas de descoberta filtram `.verified`:
+    `map/sellers`, `map/bounds`, `sellers`, `sellers/nearby`. Não existe endpoint
+    para verificar ninguém — o namespace admin só tem avaliações. Ele se cadastra,
+    publica cardápio, anuncia chegada, e não aparece para nenhum consumidor. Isso
+    anula os dois modos da §7 e boa parte do produto.
 
 8. **Não existe caixa de avisos do marmiteiro.** A spec promete "novo seguidor",
    "nova avaliação", "100 seguidores". Não existe tabela de notificação, nem
@@ -357,87 +366,125 @@ coisas precisam andar juntas.
 
 ---
 
-## 7. Ambulante e ponto fixo: a mesma tela
+## 7. Ambulante e ponto fixo: um conceito só
 
-O produto tem duas formas de vender, e as duas são legítimas:
+São dois públicos de verdade, com necessidades opostas:
 
-- **O ponto fixo** — roda entre 2 ou 3 lugares. O lugar tem nome ("Praça XV",
-  "portão da obra"), ele volta lá toda semana, e os clientes o esperam ali.
-- **O ambulante** — anda por uma região. Hoje é uma rua, amanhã são duas quadras
-  adiante. O lugar de hoje não tem nome que valha guardar.
+- **O ambulante** anda por uma região o dia inteiro. Precisa **transmitir a
+  posição de tempos em tempos**. Gastar bateria faz parte do trabalho dele.
+- **O ponto fixo** vende no mesmo lugar vários dias, no máximo 2 ou 3 lugares.
+  Precisa dizer "estou no ponto B", e **esse pino não pode andar no mapa**.
 
-**Não pergunte a ele qual dos dois ele é.** Ninguém se descreve como "ambulante
-móvel" às 10h30 com a caixa no braço, e muita gente é os dois em semanas
-diferentes. Uma tela de escolha de perfil aqui é uma pergunta que o app pode
-responder sozinho.
+Não são dois produtos. São **duas maneiras de dizer a mesma frase: "estou
+aberto"**.
 
-### O mecanismo: um botão, o GPS decide
+### O conceito único: o turno
 
-O botão é sempre `Cheguei`. O que muda é o que acontece embaixo dele:
+Um turno é: ele abriu, está vendendo, vai fechar. O modelo já tem isso inteiro —
+`currently_active`, `arrived_at`, `leaving_at`, `current_location_id`.
 
-| Situação (pelo GPS) | O que o app faz | Toques |
+A única diferença entre os dois públicos é **de onde vem a posição do turno**:
+
+| | De onde vem a posição | O pino |
 |---|---|---|
-| A menos de ~150 m de um ponto salvo | Já vem com aquele ponto escolhido: "Cheguei na Praça XV" | **1** |
-| Longe de qualquer ponto salvo | Anuncia onde ele está agora, sem pedir nome | **1** |
-| Entre dois pontos salvos próximos | Mostra os dois, o mais perto no topo | **2** |
+| **Ponto** | De um lugar salvo. Escrita uma vez, na chegada. | Parado |
+| **Circulando** | Do aparelho, enquanto o turno está aberto. | Anda |
 
-O vendedor fixo cai sempre na primeira linha. O ambulante cai sempre na segunda.
-Nenhum dos dois escolheu nada.
+Tudo o mais é idêntico: o mesmo botão, o mesmo cardápio, o mesmo aviso aos
+seguidores, o mesmo desligamento automático no `leaving_at`, a mesma tela do
+consumidor. Uma regra, dois valores.
 
-### Os pontos salvos são conquistados, não cadastrados
+### Por que isso é DRY: o mapa não muda uma linha
 
-Quando ele anuncia do mesmo lugar pela **terceira vez**, o app pergunta uma única
-vez:
+`MapController#sellers` lê a coordenada de `seller.current_location.longitude` e
+`.latitude`, e `SellerProfile.nearby` faz o `ST_DWithin` em
+`selling_locations.lonlat`.
 
-> "Você já veio aqui 3 vezes. Quer salvar como ponto?"
+Então a posição do ambulante mora onde já mora a de todo mundo: **uma linha de
+`selling_locations`, uma por marmiteiro, do tipo "circulando"**, que o app
+regrava enquanto o turno está aberto.
 
-Ele dá o nome e aquele lugar vira um ponto fixo — com chegada de 1 toque dali em
-diante. Se ele ignorar, nunca mais é perguntado por aquele lugar.
+O que continua funcionando sem tocar:
 
-É assim que o vendedor fixo acaba com seus 2 ou 3 pontos nomeados **sem nunca
-abrir um formulário de cadastro**, e o ambulante nunca vê a tela de pontos nem
-esbarra no teto de 3.
+- `SellerProfile.nearby` e a consulta PostGIS;
+- `GET /map/sellers` e `GET /map/bounds`;
+- `arrive`, `leave`, `current_location_id`;
+- o push de chegada aos seguidores.
 
-O cadastro manual em "Meus pontos" continua existindo, para quem quiser preparar
-tudo antes. Deixa de ser obrigatório.
+A alternativa — colocar `current_latitude/longitude/lonlat` em `seller_profiles` —
+é conceitualmente mais bonita e mexe na consulta PostGIS, no controller do mapa e
+no GeoJSON. Não compensa, ainda mais com o schema PostGIS já quebrado
+(`ANALYSIS.md` §3.1).
 
-### O que isso custa no backend
+### Por que isso é KISS: não existe "modo" na interface
 
-Menos do que parece. Hoje o teto de 3 (`SellingLocation#maximum_locations_per_seller`)
-conta **toda** linha de `selling_locations`, e `name` é `null: false`. Ou seja: o
-ambulante estoura o teto no quarto dia de uso.
+Ele nunca escolhe um perfil, nunca vê a palavra "modo". A folha do `Cheguei` é
+uma lista de onde ele pode estar, com o último usado no topo:
 
-O necessário é uma coluna e um escopo:
+```
+  Onde você está?
+  ▸ Praça XV                     (ponto)
+  ▸ Portão da obra               (ponto)
+  ▸ Circulando por aí            (posição ao vivo)
+```
 
-- `selling_locations.saved` (booleano, padrão `false`).
-- O teto de 3 passa a contar **só** `saved: true`. A intenção original do limite
-  — ninguém reivindicar 20 endereços fixos — fica preservada.
-- Anúncio avulso entra com `saved: false` e nome gerado do endereço reverso
-  ("Rua Augusta, 1200"), que o marmiteiro nunca vê nem digita. Promover a ponto
-  salvo é só marcar `saved: true` e trocar o nome.
-- Limpeza: apagar os `saved: false` com mais de 30 dias. Antes disso eles são o
-  que permite contar as 3 repetições.
+O ambulante toca na última linha — que para ele estará sempre no topo, porque é a
+que ele sempre usa. **1 toque.** O do ponto fixo toca no ponto dele. **1 toque.**
+Quem só tem um jeito de trabalhar nem vê a folha: o botão da tela "Hoje" já
+resolve.
 
-**Não precisa de endpoint novo.** O app faz `POST /seller/selling_locations`
-seguido de `POST /seller/selling_locations/:id/arrive` — duas chamadas, um toque
-para ele.
+É a mesma lista, o mesmo botão, o mesmo turno. A diferença entre os dois públicos
+virou uma linha a mais na lista.
 
-### O limite honesto: o ambulante se move enquanto vende
+### O que o ambulante precisa que ainda não existe
 
-Um ponto marcado às 11h está errado às 12h se ele andou seis quadras. O produto
-promete "onde tem marmita agora" e vai entregar "onde tinha marmita há uma hora".
+**No app** (nada disso está instalado ou configurado hoje):
 
-Não há endpoint para atualizar a posição sem `leave` + `arrive`. O que dá para
-fazer já:
+- `expo-task-manager` **não está no `package.json`**. Sem ele não há
+  `Location.startLocationUpdatesAsync`, que é o que transmite em segundo plano.
+- `frontend/app.json` **não tem plugins, nem permissão de localização em segundo
+  plano, nem `UIBackgroundModes: ["location"]`**. Sem isso o iOS para de mandar
+  quando ele bloqueia a tela — que é o estado normal do celular dele.
+- No Android, transmissão em segundo plano exige **serviço em primeiro plano com
+  notificação fixa**. Isso não é um custo, é um ganho: a notificação é o aviso
+  "você está aberto" e leva um botão **"Sai daqui"** direto na aba de
+  notificações — um toque, sem abrir o app, com a mão ocupada.
 
-- No app do marmiteiro, "atualizei onde estou" — por baixo, um anúncio avulso
-  novo.
-- No app do consumidor, mostrar **"chegou há 40 min"** junto da posição, para ele
-  calibrar sozinho a confiança.
+**Por distância, não por tempo.** `distanceInterval` de ~200 m em vez de um
+cronômetro: parado não gasta bateria nenhuma, andando atualiza na hora. Ele
+aceita gastar bateria, mas não faz sentido gastar quando ele está há 40 minutos
+na mesma esquina. É o jeito mais simples e o mais preciso ao mesmo tempo.
 
-Rastrear a posição do ambulante de forma contínua é outra conversa — mexe em
-bateria, em privacidade e em endpoint novo. Fica registrado aqui como pergunta
-para depois, não como suposição desta issue.
+**Desliga sozinho, sempre.** Ao tocar "Sai daqui", e no `leaving_at`. Nunca
+transmite fora de um turno aberto. Isso é a regra de privacidade e também o que
+impede a bateria de sumir de madrugada.
+
+**No backend:**
+
+1. `selling_locations.kind` (`ponto` | `circulando`). Uma linha `circulando` por
+   marmiteiro, que **não conta** no teto de 3 pontos. (Substitui a coluna `saved`
+   que eu tinha proposto antes — mesmo custo, resolve mais.)
+2. `PUT /api/v1/seller/position` com `latitude` e `longitude`: regrava a linha
+   `circulando` e atualiza `last_active_at`. **Recusa se não houver turno
+   aberto** — é a trava de privacidade no servidor, não só no app.
+3. No GeoJSON, devolver `kind` e `position_updated_at`.
+
+### O consumidor precisa enxergar a diferença
+
+Isso não é enfeite. Quem vai andar 10 minutos até um vendedor tem que saber se
+ele fica parado esperando ou se está andando.
+
+- **Ponto:** pino com o nome do lugar — "Praça XV".
+- **Circulando:** marcador diferente, e o texto **"andando por aqui · há 2 min"**.
+
+Sem a idade da posição na tela, o mapa promete uma precisão que não tem.
+
+> ⚠️ **Os dois modos são invisíveis hoje.** `seller_profiles.verified` nasce
+> `false` (migration `20251107212103`), e **todas** as rotas de descoberta filtram
+> `.verified` — `map/sellers`, `map/bounds`, `sellers`, `sellers/nearby`. Não
+> existe endpoint para verificar ninguém: o namespace admin só tem avaliações.
+> Ou seja, um marmiteiro novo anuncia, o turno abre, e ele não aparece para
+> ninguém. Vale para ponto fixo e para circulando. Ver §5, item 12.
 
 ---
 
@@ -446,11 +493,17 @@ para depois, não como suposição desta issue.
 1. Componentes compartilhados e tokens de `constants` — botão, campo, estado
    vazio, estado de erro, carregamento. Tudo abaixo depende disso.
 2. Gate "Virar marmiteiro" + troca "Comprando / Vendendo".
-3. Tela "Hoje" com Cheguei / Sai daqui, já com o GPS escolhendo entre ponto salvo
-   e anúncio avulso (§7). O caminho do ponto salvo funciona com a API de hoje; o
-   avulso liga junto com a coluna `saved` (§5, item 7).
-4. Meus pratos → Cardápio de hoje → Mandar no zap.
-5. Meus pontos.
-6. Avaliações do lado do consumidor.
-7. Baixa de quantidade — **depois** do endpoint da §5.1.
-8. Push no app — **junto com** a correção de entrega da §5.4, nunca antes.
+3. Tela "Hoje" com Cheguei / Sai daqui e a lista de onde ele está (§7). O caminho
+   do ponto salvo funciona com a API de hoje; a linha "Circulando por aí" acende
+   junto com a coluna `kind` e o `PUT /seller/position` (§5, item 7).
+4. Transmissão ao vivo do ambulante: `expo-task-manager`, permissões de segundo
+   plano no `app.json`, serviço em primeiro plano no Android com "Sai daqui" na
+   notificação. Depende do item 3.
+5. Meus pratos → Cardápio de hoje → Mandar no zap.
+6. Meus pontos.
+7. Avaliações do lado do consumidor.
+8. Baixa de quantidade — **depois** do endpoint da §5.1.
+9. Push no app — **junto com** a correção de entrega da §5.4, nunca antes.
+
+Nada disso fica visível para o consumidor enquanto `verified` não for resolvido
+(§5, item 12). Esse é o primeiro item da lista de backend, não o último.
