@@ -1,0 +1,62 @@
+DEFAULTS: &DEFAULTS
+  operating_hours:
+    monday:   { open: "11:00", close: "14:00" }
+    tuesday:  { open: "11:00", close: "14:00" }
+    wednesday: { open: "11:00", close: "14:00" }
+    thursday: { open: "11:00", close: "14:00" }
+    friday:   { open: "11:00", close: "14:00" }
+
+# Anunciando presenca agora, no Largo do Machado (RJ). E a marmiteira que
+# `SellerProfile.nearby` tem que encontrar numa busca no Catete.
+marli_marmitas:
+  <<: *DEFAULTS
+  user: marli
+  business_name: Marmitas da Dona Marli
+  bio: Comida caseira mineira feita de madrugada. Feijao no fogao de lenha.
+  phone: "21988110001"
+  whatsapp: "5521988110001"
+  city: Rio de Janeiro
+  state: RJ
+  verified: true
+  currently_active: true
+  current_location: largo_do_machado
+  arrived_at: <%= 1.hour.ago.to_fs(:db) %>
+  leaving_at: <%= 5.hours.from_now.to_fs(:db) %>
+  last_active_at: <%= 1.hour.ago.to_fs(:db) %>
+  followers_count: 1
+  favorites_count: 1
+  reviews_count: 2
+  rating_4_count: 1
+  rating_5_count: 1
+
+# Mesma regiao da Marli, mas NAO esta anunciando. Serve para provar que o filtro
+# `currently_active` do `nearby` funciona.
+jorge_quentinhas:
+  <<: *DEFAULTS
+  user: jorge
+  business_name: Quentinhas do Seu Jorge
+  bio: Quentinha honesta na porta da obra. Sem frescura, com sobremesa.
+  phone: "21988110002"
+  whatsapp: "5521988110002"
+  city: Rio de Janeiro
+  state: RJ
+  verified: false
+  currently_active: false
+
+# Anunciando agora, mas em Sao Paulo: prova que o raio do `nearby` corta por
+# distancia, nao so por `currently_active`.
+ana_verdinha:
+  <<: *DEFAULTS
+  user: ana
+  business_name: Verdinha Marmitas Veganas
+  bio: Marmita vegana congelada e fresca, sem nenhum ingrediente animal.
+  phone: "11988220001"
+  whatsapp: "5511988220001"
+  city: Sao Paulo
+  state: SP
+  verified: true
+  currently_active: true
+  current_location: benedito_calixto
+  arrived_at: <%= 2.hours.ago.to_fs(:db) %>
+  leaving_at: <%= 4.hours.from_now.to_fs(:db) %>
+  last_active_at: <%= 2.hours.ago.to_fs(:db) %>

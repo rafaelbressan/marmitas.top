@@ -1,0 +1,35 @@
+marli_feijoada:
+  weekly_menu: marli_semana_atual
+  dish: feijoada
+  available_quantity: 20
+  remaining_quantity: 8
+  display_order: 0
+
+marli_frango:
+  weekly_menu: marli_semana_atual
+  dish: frango_grelhado
+  available_quantity: 20
+  remaining_quantity: 15
+  price_override: 20.00
+  display_order: 1
+
+marli_feijoada_semana_passada:
+  weekly_menu: marli_semana_passada
+  dish: feijoada
+  available_quantity: 25
+  remaining_quantity: 0
+  display_order: 0
+
+jorge_carne:
+  weekly_menu: jorge_semana_atual
+  dish: carne_de_panela
+  available_quantity: 30
+  remaining_quantity: 30
+  display_order: 0
+
+ana_feijoada_vegana:
+  weekly_menu: ana_semana_atual
+  dish: feijoada_vegana
+  available_quantity: 15
+  remaining_quantity: 11
+  display_order: 0

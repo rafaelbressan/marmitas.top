@@ -1,0 +1,36 @@
+# Postgres + PostGIS de desenvolvimento.
+#
+# Docker em vez de apt pelos mesmos dois motivos do `benevoles`: a conta que roda
+# o app neste runtime nao tem sudo sem senha, e a maquina ja roda todos os outros
+# bancos em container.
+#
+# A porta 5432 do host ja e do gbrain-postgres, a 5433 do benevoles e a 5434 do
+# egerian, entao o marmitas.top usa a 5435, ligada so ao loopback. Sobrescreva
+# com POSTGRES_PORT se precisar de outra.
+#
+# A imagem tem que ser PostGIS: a coluna `lonlat` de `selling_locations` e do
+# tipo `geography` e o `db/structure.sql` cria a extensao no load.
+name: marmitas
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: marmitas-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-marmitas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-marmitas}
+      POSTGRES_DB: ${POSTGRES_DB:-marmitas_top_development}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5435}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marmitas}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    name: marmitas-pgdata

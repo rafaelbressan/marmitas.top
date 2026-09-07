@@ -1,0 +1,4 @@
+# Quem marca nao pode ser o autor da avaliacao (validacao em ReviewHelpful).
+diego_achou_util:
+  review: carla_sobre_marli
+  user: diego

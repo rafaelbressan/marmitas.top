@@ -314,7 +314,11 @@ Devise.setup do |config|
 
   # ==> Configuration for JWT
   config.jwt do |jwt|
-    jwt.secret = Rails.application.credentials.devise_jwt_secret_key || ENV['DEVISE_JWT_SECRET_KEY']
+    # No default: a JWT signing key that falls back to nil would issue tokens
+    # anyone could forge. If it is not configured, the process refuses to boot.
+    jwt.secret = Rails.application.credentials.devise_jwt_secret_key.presence ||
+                 ENV['DEVISE_JWT_SECRET_KEY'].presence ||
+                 raise('DEVISE_JWT_SECRET_KEY nao esta definida. Gere uma com `openssl rand -hex 64` e coloque no backend/.env (veja .env.example).')
     jwt.dispatch_requests = [
       ['POST', %r{^/api/v1/auth/login$}],
       ['POST', %r{^/api/v1/auth/register$}]

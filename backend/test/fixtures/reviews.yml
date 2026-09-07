@@ -1,0 +1,41 @@
+# `reviews_count` e a distribuicao em seller_profiles.yml acompanham estas duas.
+# Com menos de 5 avaliacoes publicadas o `average_rating` fica 0.0, que e o que
+# `SellerProfile#recalculate_ratings!` grava via `set_no_rating`.
+
+carla_sobre_marli:
+  user: carla
+  seller_profile: marli_marmitas
+  weekly_menu: marli_semana_atual
+  rating: 5
+  comment: Feijoada muito boa e porcao generosa. Chegou quente.
+  dish_name: Feijoada completa
+  encounter_date: <%= 3.days.ago.to_date.to_fs(:db) %>
+  encounter_timestamp: <%= 3.days.ago.to_fs(:db) %>
+  encounter_latitude: -22.929500
+  encounter_longitude: -43.177400
+  verified_encounter: true
+  moderation_status: published
+  helpful_count: 1
+
+diego_sobre_marli:
+  user: diego
+  seller_profile: marli_marmitas
+  weekly_menu: marli_semana_atual
+  rating: 4
+  comment: Bom preco e tempero caseiro. So faltou opcao sem gluten.
+  dish_name: Frango grelhado com legumes
+  encounter_date: <%= 1.day.ago.to_date.to_fs(:db) %>
+  encounter_timestamp: <%= 1.day.ago.to_fs(:db) %>
+  verified_encounter: false
+  moderation_status: published
+
+# Sob moderacao: nao entra em `Review.published` nem nos contadores do perfil.
+diego_sobre_jorge_em_moderacao:
+  user: diego
+  seller_profile: jorge_quentinhas
+  rating: 1
+  comment: Nao gostei da comida.
+  encounter_date: <%= 2.days.ago.to_date.to_fs(:db) %>
+  flagged: true
+  flag_reason: rating_extremo_sem_detalhe
+  moderation_status: under_review
