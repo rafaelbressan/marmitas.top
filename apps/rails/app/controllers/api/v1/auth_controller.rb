@@ -3,6 +3,11 @@ module Api
     class AuthController < BaseController
       skip_before_action :authenticate_user!, only: [ :register, :login ]
 
+      # Cadastro e login acontecem antes de existir usuario: nao ha sujeito
+      # para autorizar, e por isso sao as duas unicas acoes da API fora do
+      # `verify_authorized`.
+      skip_after_action :verify_authorized, only: [ :register, :login ]
+
       # POST /api/v1/auth/register
       def register
         user = User.new(register_params)
@@ -37,12 +42,16 @@ module Api
 
       # DELETE /api/v1/auth/logout
       def logout
+        authorize current_user, :logout?
+
         # JWT will be revoked by devise-jwt automatically
         render json: { message: "Logged out successfully" }, status: :ok
       end
 
       # GET /api/v1/auth/me
       def me
+        authorize current_user, :me?
+
         render json: { user: user_response(current_user) }, status: :ok
       end
 

@@ -9,6 +9,8 @@ module Api
 
       # GET /api/v1/favorites
       def index
+        authorize Favorite, :index?
+
         @favorites = current_user.favorites.kept_favoritable.includes(:favoritable).order(created_at: :desc)
 
         render json: {
@@ -20,6 +22,8 @@ module Api
 
       # GET /api/v1/favorites/dishes
       def dishes
+        authorize Favorite, :dishes?
+
         @dishes = current_user.favorited_dishes.kept.includes(:seller_profile, photos_attachments: :blob).order("favorites.created_at DESC")
 
         render json: {
@@ -29,6 +33,8 @@ module Api
 
       # GET /api/v1/favorites/sellers
       def sellers
+        authorize Favorite, :sellers?
+
         @sellers = current_user.favorited_sellers.kept.includes(:user).order("favorites.created_at DESC")
 
         render json: {
@@ -38,6 +44,8 @@ module Api
 
       # POST /api/v1/favorites
       def create
+        authorize Favorite, :create?
+
         favoritable = find_favoritable
 
         unless favoritable
@@ -59,15 +67,19 @@ module Api
       # DELETE /api/v1/favorites/:id
       def destroy
         @favorite = current_user.favorites.find(params[:id])
+        authorize @favorite, :destroy?
         @favorite.destroy
 
         render json: { message: "Removed from favorites successfully" }, status: :ok
       rescue ActiveRecord::RecordNotFound
+        skip_authorization
         render json: { error: "Favorite not found" }, status: :not_found
       end
 
       # DELETE /api/v1/favorites/remove
       def remove
+        authorize Favorite, :remove?
+
         favoritable = find_favoritable
 
         unless favoritable
@@ -83,6 +95,8 @@ module Api
 
       # GET /api/v1/favorites/check
       def check
+        authorize Favorite, :check?
+
         favoritable = find_favoritable
 
         unless favoritable

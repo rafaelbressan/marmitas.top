@@ -1,10 +1,17 @@
 class Api::V1::ReviewsController < Api::V1::BaseController
+  # `before_action :authenticate_user!, except: [...]` estava aqui embaixo e
+  # substituia o callback incondicional do BaseController, jogando a
+  # autenticacao para DEPOIS do `set_seller_profile`/`set_review`. Um POST sem
+  # token com id inexistente respondia 404 em vez de 401. Com `skip_before_action`
+  # a autenticacao volta a ser a primeira coisa que roda.
+  skip_before_action :authenticate_user!, only: [ :index, :show ]
   before_action :set_seller_profile, only: [ :index, :create ]
   before_action :set_review, only: [ :show, :update, :destroy, :flag, :helpful ]
-  before_action :authenticate_user!, except: [ :index, :show ]
 
   # GET /api/v1/sellers/:seller_profile_id/reviews
   def index
+    authorize Review, :index?
+
     @reviews = @seller_profile.reviews
                               .published
                               .includes(:user)
@@ -48,18 +55,25 @@ class Api::V1::ReviewsController < Api::V1::BaseController
 
   # GET /api/v1/reviews/:id
   def show
+    authorize @review, :show?
+
+    # As tres permissoes vem da policy, nao de uma copia da regra aqui. Antes
+    # chamavam `@review.editable_by?(current_user)` direto, e como esta acao e
+    # publica, um GET sem token estourava NoMethodError em `nil.id` (500).
     render json: {
       review: review_response(@review, detailed: true),
       permissions: {
-        can_edit: @review.editable_by?(current_user),
-        can_flag: @review.flaggable_by?(current_user),
-        can_mark_helpful: current_user && current_user.id != @review.user_id
+        can_edit: policy(@review).update?,
+        can_flag: policy(@review).flag?,
+        can_mark_helpful: policy(@review).helpful?
       }
     }
   end
 
   # POST /api/v1/sellers/:seller_profile_id/reviews
   def create
+    authorize Review, :create?
+
     @review = @seller_profile.reviews.new(review_params)
     @review.user = current_user
 
@@ -75,9 +89,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
 
   # PATCH /api/v1/reviews/:id
   def update
-    unless @review.editable_by?(current_user)
-      return render json: { error: "Esta avaliação não pode ser editada" }, status: :forbidden
-    end
+    authorize @review, :update?
 
     if @review.update(review_update_params)
       @review.increment!(:edit_count)
@@ -96,9 +108,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
   #
   # Descarta, nao apaga: a avaliacao sai da API e continua no banco.
   def destroy
-    unless @review.editable_by?(current_user)
-      return render json: { error: "Esta avaliação não pode ser removida" }, status: :forbidden
-    end
+    authorize @review, :destroy?
 
     @review.discard
     render json: { message: "Avaliação removida com sucesso" }
@@ -106,6 +116,8 @@ class Api::V1::ReviewsController < Api::V1::BaseController
 
   # POST /api/v1/reviews/:id/flag
   def flag
+    authorize @review, :flag?
+
     flag_reason = params[:reason].to_s.strip
 
     if flag_reason.blank?
@@ -121,9 +133,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
 
   # POST /api/v1/reviews/:id/helpful
   def helpful
-    if current_user.id == @review.user_id
-      return render json: { error: "Você não pode marcar sua própria avaliação como útil" }, status: :forbidden
-    end
+    authorize @review, :helpful?
 
     is_helpful = @review.toggle_helpful(current_user)
 

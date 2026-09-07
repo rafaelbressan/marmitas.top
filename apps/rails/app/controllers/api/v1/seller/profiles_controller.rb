@@ -6,6 +6,8 @@ module Api
 
         # GET /api/v1/seller/profile
         def show
+          authorize [ :seller, @profile || ::SellerProfile ], :show?
+
           if @profile
             render json: profile_response(@profile), status: :ok
           else
@@ -15,6 +17,8 @@ module Api
 
         # POST /api/v1/seller/profile
         def create
+          authorize [ :seller, ::SellerProfile ], :create?
+
           discarded = discarded_profile
 
           return restore(discarded) if discarded
@@ -38,8 +42,11 @@ module Api
         # PATCH /api/v1/seller/profile
         def update
           unless @profile
+            skip_authorization
             return render json: { error: "Seller profile not found" }, status: :not_found
           end
+
+          authorize [ :seller, @profile ], :update?
 
           if @profile.update(profile_params)
             render json: {
@@ -58,8 +65,11 @@ module Api
         # API. `POST /api/v1/seller/profile` traz tudo de volta.
         def destroy
           unless @profile
+            skip_authorization
             return render json: { error: "Seller profile not found" }, status: :not_found
           end
+
+          authorize [ :seller, @profile ], :destroy?
 
           @profile.discard
           render json: { message: "Seller profile deleted successfully" }, status: :ok

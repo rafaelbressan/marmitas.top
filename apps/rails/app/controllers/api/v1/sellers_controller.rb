@@ -5,6 +5,8 @@ module Api
 
       # GET /api/v1/sellers
       def index
+        authorize SellerProfile, :index?
+
         @sellers = SellerProfile.kept.verified.includes(:user)
         @sellers = apply_filters(@sellers)
 
@@ -31,13 +33,17 @@ module Api
       # GET /api/v1/sellers/:id
       def show
         @seller = SellerProfile.kept.find(params[:id])
+        authorize @seller, :show?
         render json: { seller: seller_detail(@seller) }, status: :ok
       rescue ActiveRecord::RecordNotFound
+        skip_authorization
         render json: { error: "Seller not found" }, status: :not_found
       end
 
       # GET /api/v1/sellers/nearby
       def nearby
+        authorize SellerProfile, :nearby?
+
         unless params[:latitude] && params[:longitude]
           return render json: { error: "Latitude and longitude required" }, status: :bad_request
         end

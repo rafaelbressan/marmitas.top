@@ -5,6 +5,8 @@ module Api
 
       # GET /api/v1/notification_preferences
       def show
+        authorize current_user, :show?, policy_class: NotificationPreferencesPolicy
+
         render json: {
           notification_preferences: current_user.notification_preferences
         }, status: :ok
@@ -12,6 +14,8 @@ module Api
 
       # PATCH /api/v1/notification_preferences
       def update
+        authorize current_user, :update?, policy_class: NotificationPreferencesPolicy
+
         preferences = current_user.notification_preferences.merge(preferences_params)
 
         if current_user.update(notification_preferences: preferences)

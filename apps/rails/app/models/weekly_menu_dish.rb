@@ -7,6 +7,10 @@ class WeeklyMenuDish < ApplicationRecord
   belongs_to :weekly_menu
   belongs_to :dish
 
+  # De quem e esta linha. Sem isto a policy nao sabe responder, e registro que
+  # nao sabe dizer de quem e nao passa por `ApplicationPolicy#owns_record?`.
+  delegate :seller_profile, to: :weekly_menu
+
   # Validations
   validates :available_quantity, presence: true, numericality: { greater_than: 0 }
   validates :remaining_quantity, presence: true, numericality: { greater_than_or_equal_to: 0 }

@@ -19,6 +19,8 @@ module Api
 
         # PATCH /api/v1/seller/weekly_menus/:id/dishes/:dish_id/quantity
         def update
+          authorize [ :seller, @menu_dish ], :update?
+
           sold = params[:sold]
           remaining = params[:remaining_quantity]
 

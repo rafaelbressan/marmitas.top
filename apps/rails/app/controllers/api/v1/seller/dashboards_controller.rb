@@ -19,10 +19,16 @@ module Api
           profile = current_user.seller_profile
 
           unless profile&.kept?
+            # A mensagem daqui e mais util que o 403 generico da policy, entao a
+            # checagem de perfil fica no controller. `Seller::DashboardPolicy`
+            # diz a mesma coisa e existe para o `verify_authorized`.
+            skip_authorization
             return render json: {
               error: "Você precisa criar um perfil de marmiteiro antes de ver o painel."
             }, status: :forbidden
           end
+
+          authorize [ :seller, :dashboard ], :show?
 
           render json: {
             dashboard: {

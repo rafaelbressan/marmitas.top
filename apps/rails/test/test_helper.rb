@@ -1,6 +1,7 @@
 ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 require "rails/test_help"
+require_relative "test_helpers/permission_matrix"
 
 module ActiveSupport
   class TestCase
@@ -18,6 +19,9 @@ module ActiveSupport
 
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
+
+    # A matriz de acesso da BRES-103, papel a papel.
+    include PermissionMatrix
 
     # Add more helper methods to be used by all tests here...
   end

@@ -5,6 +5,8 @@ module Api
 
       # GET /api/v1/menus
       def index
+        authorize WeeklyMenu, :index?
+
         @menus = WeeklyMenu.active.available_now
                           .includes(seller_profile: :user, weekly_menu_dishes: { dish: :photos })
                           .order(created_at: :desc)
@@ -26,16 +28,20 @@ module Api
       # GET /api/v1/menus/:id
       def show
         @menu = WeeklyMenu.kept.find(params[:id])
+        authorize @menu, :show?
 
         render json: {
           menu: menu_detail(@menu)
         }, status: :ok
       rescue ActiveRecord::RecordNotFound
+        skip_authorization
         render json: { error: "Menu not found" }, status: :not_found
       end
 
       # GET /api/v1/menus/available_today
       def available_today
+        authorize WeeklyMenu, :available_today?
+
         @menus = WeeklyMenu.active.available_now
                           .includes(seller_profile: :user, weekly_menu_dishes: { dish: :photos })
                           .order(created_at: :desc)
@@ -47,6 +53,8 @@ module Api
 
       # GET /api/v1/sellers/:seller_id/menus
       def seller_menus
+        authorize WeeklyMenu, :seller_menus?
+
         @seller = SellerProfile.kept.find(params[:seller_id])
         @menus = @seller.weekly_menus.active.available_now
                         .includes(weekly_menu_dishes: { dish: :photos })

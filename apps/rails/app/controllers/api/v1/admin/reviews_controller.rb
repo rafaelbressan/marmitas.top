@@ -5,6 +5,8 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   # GET /api/v1/admin/reviews
   def index
+    authorize [ :admin, Review ], :index?
+
     # A fila de moderacao so ve avaliacao viva: uma avaliacao descartada ja saiu
     # da API e nao ha o que moderar nela.
     @reviews = Review.kept.includes(:user, :seller_profile)
@@ -38,6 +40,8 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   # GET /api/v1/admin/reviews/:id
   def show
+    authorize [ :admin, @review ], :show?
+
     # Get user's review history
     user_reviews = @review.user.reviews.order(created_at: :desc).limit(10)
 
@@ -64,6 +68,8 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   # POST /api/v1/admin/reviews/:id/approve
   def approve
+    authorize [ :admin, @review ], :approve?
+
     note = params[:note].to_s.strip
 
     @review.approve!(current_user, note)
@@ -76,6 +82,8 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   # POST /api/v1/admin/reviews/:id/remove
   def remove
+    authorize [ :admin, @review ], :remove?
+
     note = params[:note].to_s.strip
 
     if note.blank?

@@ -8,6 +8,8 @@ module Api
 
         # GET /api/v1/seller/weekly_menus
         def index
+          authorize [ :seller, WeeklyMenu ], :index?
+
           @menus = seller_profile.weekly_menus.kept.order(available_from: :desc)
 
           # Filter by status
@@ -29,11 +31,15 @@ module Api
 
         # GET /api/v1/seller/weekly_menus/:id
         def show
+          authorize [ :seller, @menu ], :show?
+
           render json: { menu: menu_detail(@menu) }, status: :ok
         end
 
         # POST /api/v1/seller/weekly_menus
         def create
+          authorize [ :seller, WeeklyMenu ], :create?
+
           @menu = seller_profile.weekly_menus.build(menu_params)
 
           if @menu.save
@@ -48,6 +54,8 @@ module Api
 
         # PATCH /api/v1/seller/weekly_menus/:id
         def update
+          authorize [ :seller, @menu ], :update?
+
           if @menu.update(menu_params)
             render json: {
               message: "Daily menu updated successfully",
@@ -60,6 +68,8 @@ module Api
 
         # DELETE /api/v1/seller/weekly_menus/:id
         def destroy
+          authorize [ :seller, @menu ], :destroy?
+
           if @menu.available?
             return render json: {
               error: "Cannot delete an active menu"
@@ -72,6 +82,8 @@ module Api
 
         # POST /api/v1/seller/weekly_menus/:id/add_dish
         def add_dish
+          authorize [ :seller, @menu ], :add_dish?
+
           dish = seller_profile.dishes.kept.find(params[:dish_id])
 
           menu_dish = @menu.weekly_menu_dishes.build(
@@ -98,6 +110,8 @@ module Api
         # Descarta, nao apaga: a linha guarda quanto foi anunciado e quanto sobrou
         # naquele dia.
         def remove_dish
+          authorize [ :seller, @menu ], :remove_dish?
+
           menu_dish = @menu.weekly_menu_dishes.kept.find_by(dish_id: params[:dish_id])
 
           unless menu_dish
@@ -113,6 +127,8 @@ module Api
 
         # POST /api/v1/seller/weekly_menus/:id/duplicate
         def duplicate
+          authorize [ :seller, @menu ], :duplicate?
+
           new_available_from = params[:available_from]&.to_datetime
           new_available_until = params[:available_until]&.to_datetime
 
@@ -133,6 +149,8 @@ module Api
 
         # GET /api/v1/seller/weekly_menus/:id/whatsapp_text
         def whatsapp_text
+          authorize [ :seller, @menu ], :whatsapp_text?
+
           render json: {
             message: @menu.whatsapp_message,
             encoded_message: ERB::Util.url_encode(@menu.whatsapp_message)

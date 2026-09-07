@@ -9,6 +9,8 @@ module Api
 
         # GET /api/v1/seller/selling_locations
         def index
+          authorize [ :seller, SellingLocation ], :index?
+
           # A linha "circulando" e posicao ao vivo, nao um lugar salvo: fica
           # fora da lista de pontos e do limite de 3.
           @locations = seller_profile.selling_locations.kept.pontos.order(created_at: :asc)
@@ -20,11 +22,15 @@ module Api
 
         # GET /api/v1/seller/selling_locations/:id
         def show
+          authorize [ :seller, @location ], :show?
+
           render json: { location: location_response(@location) }, status: :ok
         end
 
         # POST /api/v1/seller/selling_locations
         def create
+          authorize [ :seller, SellingLocation ], :create?
+
           @location = seller_profile.selling_locations.build(location_params)
 
           if @location.save
@@ -39,6 +45,8 @@ module Api
 
         # PATCH /api/v1/seller/selling_locations/:id
         def update
+          authorize [ :seller, @location ], :update?
+
           if @location.update(location_params)
             render json: {
               message: "Selling location updated successfully",
@@ -51,6 +59,8 @@ module Api
 
         # DELETE /api/v1/seller/selling_locations/:id
         def destroy
+          authorize [ :seller, @location ], :destroy?
+
           # Don't allow deleting current active location
           if seller_profile.current_location_id == @location.id
             return render json: {
@@ -64,6 +74,8 @@ module Api
 
         # POST /api/v1/seller/selling_locations/:id/arrive
         def arrive
+          authorize [ :seller, @location ], :arrive?
+
           # Check if already broadcasting from another location
           if seller_profile.currently_active && seller_profile.current_location_id != @location.id
             current_location = seller_profile.current_location
@@ -88,6 +100,8 @@ module Api
 
         # POST /api/v1/seller/selling_locations/:id/leave
         def leave
+          authorize [ :seller, @location ], :leave?
+
           unless seller_profile.currently_active
             return render json: { error: "Not currently broadcasting" }, status: :unprocessable_entity
           end

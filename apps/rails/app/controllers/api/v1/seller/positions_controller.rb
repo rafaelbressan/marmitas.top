@@ -22,6 +22,8 @@ module Api
 
         # GET /api/v1/seller/position
         def show
+          authorize [ :seller, :position ], :show?
+
           location = seller_profile.roaming_location!
 
           render json: {
@@ -33,6 +35,8 @@ module Api
 
         # PUT /api/v1/seller/position
         def update
+          authorize [ :seller, :position ], :update?
+
           latitude, longitude = coordinates
           return if performed?
 

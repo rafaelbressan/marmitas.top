@@ -8,6 +8,8 @@ module Api
 
         # GET /api/v1/seller/dishes
         def index
+          authorize [ :seller, Dish ], :index?
+
           @dishes = seller_profile.dishes.kept.order(created_at: :desc)
           @dishes = @dishes.active if params[:active_only] == "true"
 
@@ -18,6 +20,8 @@ module Api
 
         # GET /api/v1/seller/dishes/favorites_stats
         def favorites_stats
+          authorize [ :seller, Dish ], :favorites_stats?
+
           @dishes = seller_profile.dishes.kept
                                 .order(favorites_count: :desc)
                                 .limit(params[:limit] || 10)
@@ -41,11 +45,15 @@ module Api
 
         # GET /api/v1/seller/dishes/:id
         def show
+          authorize [ :seller, @dish ], :show?
+
           render json: { dish: dish_response(@dish) }, status: :ok
         end
 
         # POST /api/v1/seller/dishes
         def create
+          authorize [ :seller, Dish ], :create?
+
           @dish = seller_profile.dishes.build(dish_params)
 
           if @dish.save
@@ -61,6 +69,8 @@ module Api
 
         # PATCH /api/v1/seller/dishes/:id
         def update
+          authorize [ :seller, @dish ], :update?
+
           if @dish.update(dish_params)
             attach_photos if params[:dish][:photos].present?
             render json: {
@@ -77,6 +87,8 @@ module Api
         # Descarta, nao apaga. A linha do prato em cada cardapio
         # (`weekly_menu_dishes`) fica: e o registro de quanto saiu naquele dia.
         def destroy
+          authorize [ :seller, @dish ], :destroy?
+
           # Check if dish is in any active menus
           if @dish.weekly_menus.active.available_now.any?
             return render json: {
