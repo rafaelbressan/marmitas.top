@@ -51,3 +51,17 @@ bia:
   name: Bia Nogueira
   email: bia.nogueira@marmitas.top
   phone: "21988110003"
+
+# Ambulante: anda pelo Catete com o carrinho e transmite a posicao.
+neide:
+  <<: *DEFAULTS
+  name: Neide Barros
+  email: neide.ambulante@marmitas.top
+  phone: "21988110005"
+
+# Esqueceu de tocar "sai daqui" ontem: o turno venceu e o pino ficou no mapa.
+tiao:
+  <<: *DEFAULTS
+  name: Tiao Alves
+  email: tiao.esquecido@marmitas.top
+  phone: "21988110006"
