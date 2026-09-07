@@ -807,7 +807,7 @@ end
 ```bash
 # Clone repo
 git clone https://github.com/rafaelbressan/marmitas.top.git
-cd marmitas.top/backend
+cd marmitas.top/apps/rails
 
 # Install dependencies
 bundle install
@@ -823,7 +823,7 @@ rails s
 
 ### Frontend Setup
 ```bash
-cd frontend
+cd ../mobile
 
 # Install dependencies
 npm install
@@ -864,7 +864,7 @@ EXPO_PUBLIC_GOOGLE_MAPS_KEY=...
 ## Next Steps
 
 1. **Repository Setup**
-   - Create separate `backend/` and `frontend/` directories
+   - Create separate `apps/rails/` and `apps/mobile/` directories
    - Initialize Rails 8 app
    - Initialize Expo app with TypeScript
 
