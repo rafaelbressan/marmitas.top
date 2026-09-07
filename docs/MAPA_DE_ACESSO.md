@@ -70,6 +70,7 @@ moderação. Essa regra continua no model; a policy chama, não reescreve.
 | `POST seller/profile` | ❌ | ✅ | ✅ | ✅ | ✅ | `Seller::SellerProfilePolicy#create?` |
 | `PATCH seller/profile` | ❌ | ❌ | ✅ | ❌ | ❌ | `Seller::SellerProfilePolicy#update?` |
 | `DELETE seller/profile` | ❌ | ❌ | ❌ | ❌ | ❌ | rota morta — ver nota |
+| `GET seller/dashboard` | ❌ | ❌ | ✅ (o seu) | ✅ (o seu) | ❌ | `Seller::DashboardPolicy#show?` |
 | `GET seller/dishes` | ❌ | ❌ | ✅ | ✅ (os seus) | ❌ | `Seller::DishPolicy#index?` |
 | `GET seller/dishes/favorites_stats` | ❌ | ❌ | ✅ | ✅ (os seus) | ❌ | `Seller::DishPolicy#favorites_stats?` |
 | `POST seller/dishes` | ❌ | ❌ | ✅ | ✅ | ❌ | `Seller::DishPolicy#create?` |
@@ -87,6 +88,11 @@ moderação. Essa regra continua no model; a policy chama, não reescreve.
 
 O admin não entra no painel de ninguém: não tem perfil de marmiteiro e
 `owns_record?` fecha.
+
+`seller/dashboard` (BRES-132) monta tudo a partir de
+`current_user.seller_profile`, então cada marmiteiro vê só o próprio resumo. A
+mensagem de "crie um perfil primeiro" fica no controller porque é mais útil que
+o 403 genérico; a policy diz a mesma coisa e existe para o `verify_authorized`.
 
 `GET`/`POST seller/profile` valem para qualquer conta porque são o caminho de
 cadastro — quem ainda não é marmiteiro precisa poder perguntar (404 "crie um

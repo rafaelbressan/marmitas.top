@@ -2,7 +2,7 @@ module Api
   module V1
     class DeviceTokensController < ApplicationController
       before_action :authenticate_user!
-      before_action :set_device_token, only: [:destroy]
+      before_action :set_device_token, only: [ :destroy ]
 
       # GET /api/v1/device_tokens
       def index
@@ -34,7 +34,7 @@ module Api
 
         if @token.save
           render json: {
-            message: 'Device token registered successfully',
+            message: "Device token registered successfully",
             device_token: device_token_response(@token)
           }, status: @token.previously_new_record? ? :created : :ok
         else
@@ -48,7 +48,7 @@ module Api
 
         @token.destroy
 
-        render json: { message: 'Device token removed successfully' }, status: :ok
+        render json: { message: "Device token removed successfully" }, status: :ok
       end
 
       # POST /api/v1/device_tokens/deactivate_all
@@ -57,7 +57,7 @@ module Api
 
         current_user.device_tokens.active.each(&:deactivate!)
 
-        render json: { message: 'All device tokens deactivated successfully' }, status: :ok
+        render json: { message: "All device tokens deactivated successfully" }, status: :ok
       end
 
       private
@@ -65,7 +65,7 @@ module Api
       def set_device_token
         @token = current_user.device_tokens.find(params[:id])
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Device token not found' }, status: :not_found
+        render json: { error: "Device token not found" }, status: :not_found
       end
 
       def device_token_params

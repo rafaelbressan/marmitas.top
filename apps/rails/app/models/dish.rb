@@ -37,6 +37,6 @@ class Dish < ApplicationRecord
 
   # Human-readable dietary tags
   def dietary_tags_display
-    dietary_tags.map { |tag| tag.humanize }.join(', ')
+    dietary_tags.map { |tag| tag.humanize }.join(", ")
   end
 end

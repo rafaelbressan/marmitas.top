@@ -2,7 +2,7 @@ module Api
   module V1
     module Seller
       class ProfilesController < BaseController
-        before_action :set_profile, only: [:show, :update]
+        before_action :set_profile, only: [ :show, :update ]
 
         # GET /api/v1/seller/profile
         def show
@@ -11,7 +11,7 @@ module Api
           if @profile
             render json: profile_response(@profile), status: :ok
           else
-            render json: { error: 'Seller profile not found. Create one first.' }, status: :not_found
+            render json: { error: "Seller profile not found. Create one first." }, status: :not_found
           end
         end
 
@@ -20,14 +20,14 @@ module Api
           authorize [ :seller, ::SellerProfile ], :create?
 
           if current_user.seller_profile
-            return render json: { error: 'Seller profile already exists' }, status: :unprocessable_entity
+            return render json: { error: "Seller profile already exists" }, status: :unprocessable_entity
           end
 
           @profile = current_user.build_seller_profile(profile_params)
 
           if @profile.save
             render json: {
-              message: 'Seller profile created successfully',
+              message: "Seller profile created successfully",
               profile: profile_response(@profile)
             }, status: :created
           else
@@ -39,14 +39,14 @@ module Api
         def update
           unless @profile
             skip_authorization
-            return render json: { error: 'Seller profile not found' }, status: :not_found
+            return render json: { error: "Seller profile not found" }, status: :not_found
           end
 
           authorize [ :seller, @profile ], :update?
 
           if @profile.update(profile_params)
             render json: {
-              message: 'Seller profile updated successfully',
+              message: "Seller profile updated successfully",
               profile: profile_response(@profile)
             }, status: :ok
           else
@@ -64,13 +64,13 @@ module Api
         def destroy
           unless @profile
             skip_authorization
-            return render json: { error: 'Seller profile not found' }, status: :not_found
+            return render json: { error: "Seller profile not found" }, status: :not_found
           end
 
           authorize [ :seller, @profile ], :destroy?
 
           @profile.destroy
-          render json: { message: 'Seller profile deleted successfully' }, status: :ok
+          render json: { message: "Seller profile deleted successfully" }, status: :ok
         end
 
         private

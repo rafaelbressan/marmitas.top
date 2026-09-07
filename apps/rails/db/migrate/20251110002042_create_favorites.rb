@@ -8,7 +8,7 @@ class CreateFavorites < ActiveRecord::Migration[8.1]
     end
 
     # Prevent duplicate favorites
-    add_index :favorites, [:user_id, :favoritable_type, :favoritable_id], unique: true, name: 'index_favorites_uniqueness'
+    add_index :favorites, [ :user_id, :favoritable_type, :favoritable_id ], unique: true, name: 'index_favorites_uniqueness'
 
     # Add favorites counter cache to seller_profiles and dishes
     add_column :seller_profiles, :favorites_count, :integer, default: 0, null: false

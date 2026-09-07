@@ -5,7 +5,7 @@ class DeviceToken < ApplicationRecord
   # Validations
   validates :token, presence: true
   validates :platform, presence: true, inclusion: { in: %w[ios android web] }
-  validates :token, uniqueness: { scope: [:user_id, :platform] }
+  validates :token, uniqueness: { scope: [ :user_id, :platform ] }
 
   # Callbacks
   before_save :update_last_used_at, if: :will_save_change_to_active?
@@ -13,9 +13,9 @@ class DeviceToken < ApplicationRecord
   # Scopes
   scope :active, -> { where(active: true) }
   scope :for_platform, ->(platform) { where(platform: platform) }
-  scope :ios, -> { where(platform: 'ios') }
-  scope :android, -> { where(platform: 'android') }
-  scope :web, -> { where(platform: 'web') }
+  scope :ios, -> { where(platform: "ios") }
+  scope :android, -> { where(platform: "android") }
+  scope :web, -> { where(platform: "web") }
 
   # Mark token as inactive (e.g., when user logs out)
   def deactivate!

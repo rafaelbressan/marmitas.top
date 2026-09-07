@@ -1,7 +1,7 @@
 module Api
   module V1
     class MenusController < BaseController
-      skip_before_action :authenticate_user!, only: [:index, :show, :available_today]
+      skip_before_action :authenticate_user!, only: [ :index, :show, :available_today ]
 
       # GET /api/v1/menus
       def index
@@ -35,7 +35,7 @@ module Api
         }, status: :ok
       rescue ActiveRecord::RecordNotFound
         skip_authorization
-        render json: { error: 'Menu not found' }, status: :not_found
+        render json: { error: "Menu not found" }, status: :not_found
       end
 
       # GET /api/v1/menus/available_today
@@ -64,7 +64,7 @@ module Api
           menus: @menus.map { |menu| menu_summary(menu) }
         }, status: :ok
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Seller not found' }, status: :not_found
+        render json: { error: "Seller not found" }, status: :not_found
       end
 
       private

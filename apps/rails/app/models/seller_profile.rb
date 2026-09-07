@@ -10,7 +10,7 @@ class SellerProfile < ApplicationRecord
   has_many :dishes, dependent: :destroy
   has_many :weekly_menus, dependent: :destroy
   has_many :selling_locations, dependent: :destroy
-  belongs_to :current_location, class_name: 'SellingLocation', optional: true
+  belongs_to :current_location, class_name: "SellingLocation", optional: true
   has_many :favorites, as: :favoritable, dependent: :destroy
   has_many :followers, through: :favorites, source: :user
   has_many :reviews, dependent: :destroy
@@ -71,11 +71,11 @@ class SellerProfile < ApplicationRecord
           lng, lat
         ])
       )
-      .order('distance_km ASC')
+      .order("distance_km ASC")
   end
 
   # Callbacks
-  after_commit :update_stats, on: [:create, :update]
+  after_commit :update_stats, on: [ :create, :update ]
 
   # Methods
   def current_menu
@@ -101,7 +101,7 @@ class SellerProfile < ApplicationRecord
     end
 
     # Send push notifications to followers (async to avoid slowing down the response)
-    NotifyFollowersJob.perform_later(id, 'arrival') rescue nil
+    NotifyFollowersJob.perform_later(id, "arrival") rescue nil
 
     self
   end
@@ -219,7 +219,7 @@ class SellerProfile < ApplicationRecord
     return :stable if reviews_count < 10
 
     recent = reviews.published.recent.average(:rating).to_f
-    old = reviews.published.where('created_at < ?', 30.days.ago).average(:rating).to_f
+    old = reviews.published.where("created_at < ?", 30.days.ago).average(:rating).to_f
 
     return :stable if recent == 0 || old == 0
 

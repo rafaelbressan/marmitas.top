@@ -12,7 +12,7 @@ class CreateDailyMenus < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :daily_menus, [:seller_profile_id, :available_from]
+    add_index :daily_menus, [ :seller_profile_id, :available_from ]
     add_index :daily_menus, :available_from
     add_index :daily_menus, :available_until
     add_index :daily_menus, :active

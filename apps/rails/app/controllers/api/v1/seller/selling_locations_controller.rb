@@ -5,7 +5,7 @@ module Api
         # Roda antes do `set_location`: sem perfil, `current_user.seller_profile`
         # era `nil` e a busca estourava 500 em vez de negar acesso.
         before_action :require_seller_profile
-        before_action :set_location, only: [:show, :update, :destroy, :arrive, :leave]
+        before_action :set_location, only: [ :show, :update, :destroy, :arrive, :leave ]
 
         # GET /api/v1/seller/selling_locations
         def index
@@ -33,7 +33,7 @@ module Api
 
           if @location.save
             render json: {
-              message: 'Selling location created successfully',
+              message: "Selling location created successfully",
               location: location_response(@location)
             }, status: :created
           else
@@ -47,7 +47,7 @@ module Api
 
           if @location.update(location_params)
             render json: {
-              message: 'Selling location updated successfully',
+              message: "Selling location updated successfully",
               location: location_response(@location)
             }, status: :ok
           else
@@ -62,12 +62,12 @@ module Api
           # Don't allow deleting current active location
           if current_user.seller_profile.current_location_id == @location.id
             return render json: {
-              error: 'Cannot delete location while broadcasting from it. Please leave first.'
+              error: "Cannot delete location while broadcasting from it. Please leave first."
             }, status: :unprocessable_entity
           end
 
           @location.discard
-          render json: { message: 'Selling location deleted successfully' }, status: :ok
+          render json: { message: "Selling location deleted successfully" }, status: :ok
         end
 
         # POST /api/v1/seller/selling_locations/:id/arrive
@@ -88,7 +88,7 @@ module Api
             current_user.seller_profile.announce_arrival(@location.id, leaving_at: leaving_at)
 
             render json: {
-              message: 'Arrival announced successfully',
+              message: "Arrival announced successfully",
               seller: seller_broadcast_status
             }, status: :ok
           rescue ActiveRecord::RecordInvalid => e
@@ -101,17 +101,17 @@ module Api
           authorize [ :seller, @location ], :leave?
 
           unless current_user.seller_profile.currently_active
-            return render json: { error: 'Not currently broadcasting' }, status: :unprocessable_entity
+            return render json: { error: "Not currently broadcasting" }, status: :unprocessable_entity
           end
 
           unless current_user.seller_profile.current_location_id == @location.id
-            return render json: { error: 'Not at this location' }, status: :unprocessable_entity
+            return render json: { error: "Not at this location" }, status: :unprocessable_entity
           end
 
           current_user.seller_profile.announce_departure
 
           render json: {
-            message: 'Departure announced successfully',
+            message: "Departure announced successfully",
             seller: seller_broadcast_status
           }, status: :ok
         end
@@ -121,7 +121,7 @@ module Api
         def set_location
           @location = current_user.seller_profile.selling_locations.kept.find(params[:id])
         rescue ActiveRecord::RecordNotFound
-          render json: { error: 'Location not found' }, status: :not_found
+          render json: { error: "Location not found" }, status: :not_found
         end
 
         def location_params

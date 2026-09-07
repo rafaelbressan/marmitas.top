@@ -20,7 +20,7 @@ module Api
       def dishes
         authorize Favorite, :dishes?
 
-        @dishes = current_user.favorited_dishes.kept.includes(:seller_profile, photos_attachments: :blob).order('favorites.created_at DESC')
+        @dishes = current_user.favorited_dishes.kept.includes(:seller_profile, photos_attachments: :blob).order("favorites.created_at DESC")
 
         render json: {
           dishes: @dishes.map { |dish| dish_favorite_response(dish) }
@@ -31,7 +31,7 @@ module Api
       def sellers
         authorize Favorite, :sellers?
 
-        @sellers = current_user.favorited_sellers.kept.includes(:user).order('favorites.created_at DESC')
+        @sellers = current_user.favorited_sellers.kept.includes(:user).order("favorites.created_at DESC")
 
         render json: {
           sellers: @sellers.map { |seller| seller_favorite_response(seller) }
@@ -45,14 +45,14 @@ module Api
         favoritable = find_favoritable
 
         unless favoritable
-          return render json: { error: 'Invalid favoritable type or ID' }, status: :unprocessable_entity
+          return render json: { error: "Invalid favoritable type or ID" }, status: :unprocessable_entity
         end
 
         begin
           @favorite = current_user.favorite!(favoritable)
 
           render json: {
-            message: 'Added to favorites successfully',
+            message: "Added to favorites successfully",
             favorite: favorite_response(@favorite)
           }, status: :created
         rescue ActiveRecord::RecordInvalid => e
@@ -67,10 +67,10 @@ module Api
 
         @favorite.destroy
 
-        render json: { message: 'Removed from favorites successfully' }, status: :ok
+        render json: { message: "Removed from favorites successfully" }, status: :ok
       rescue ActiveRecord::RecordNotFound
         skip_authorization
-        render json: { error: 'Favorite not found' }, status: :not_found
+        render json: { error: "Favorite not found" }, status: :not_found
       end
 
       # DELETE /api/v1/favorites/remove
@@ -80,13 +80,13 @@ module Api
         favoritable = find_favoritable
 
         unless favoritable
-          return render json: { error: 'Invalid favoritable type or ID' }, status: :unprocessable_entity
+          return render json: { error: "Invalid favoritable type or ID" }, status: :unprocessable_entity
         end
 
         if current_user.unfavorite!(favoritable)
-          render json: { message: 'Removed from favorites successfully' }, status: :ok
+          render json: { message: "Removed from favorites successfully" }, status: :ok
         else
-          render json: { error: 'Item was not favorited' }, status: :not_found
+          render json: { error: "Item was not favorited" }, status: :not_found
         end
       end
 
@@ -97,7 +97,7 @@ module Api
         favoritable = find_favoritable
 
         unless favoritable
-          return render json: { error: 'Invalid favoritable type or ID' }, status: :unprocessable_entity
+          return render json: { error: "Invalid favoritable type or ID" }, status: :unprocessable_entity
         end
 
         is_favorited = current_user.favorited?(favoritable)
@@ -118,9 +118,9 @@ module Api
         return nil unless favoritable_type.present? && favoritable_id.present?
 
         case favoritable_type
-        when 'Dish'
+        when "Dish"
           Dish.find_by(id: favoritable_id)
-        when 'SellerProfile', 'Seller'
+        when "SellerProfile", "Seller"
           SellerProfile.find_by(id: favoritable_id)
         else
           nil
@@ -177,7 +177,7 @@ module Api
           photos: dish.photos.map { |photo|
             {
               url: photo.url,
-              thumbnail_url: photo.variant(resize_to_limit: [200, 200]).processed.url
+              thumbnail_url: photo.variant(resize_to_limit: [ 200, 200 ]).processed.url
             } rescue nil
           }.compact,
           created_at: dish.created_at
