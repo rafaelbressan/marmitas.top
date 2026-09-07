@@ -2,11 +2,13 @@ module Api
   module V1
     module Seller
       class DishesController < BaseController
+        include SellerProfileScope
+
         before_action :set_dish, only: [ :show, :update, :destroy ]
 
         # GET /api/v1/seller/dishes
         def index
-          @dishes = current_user.seller_profile.dishes.kept.order(created_at: :desc)
+          @dishes = seller_profile.dishes.kept.order(created_at: :desc)
           @dishes = @dishes.active if params[:active_only] == "true"
 
           render json: {
@@ -16,11 +18,11 @@ module Api
 
         # GET /api/v1/seller/dishes/favorites_stats
         def favorites_stats
-          @dishes = current_user.seller_profile.dishes.kept
+          @dishes = seller_profile.dishes.kept
                                 .order(favorites_count: :desc)
                                 .limit(params[:limit] || 10)
 
-          total_favorites = current_user.seller_profile.dishes.kept.sum(:favorites_count)
+          total_favorites = seller_profile.dishes.kept.sum(:favorites_count)
 
           render json: {
             total_favorites: total_favorites,
@@ -44,11 +46,7 @@ module Api
 
         # POST /api/v1/seller/dishes
         def create
-          unless current_user.seller_profile
-            return render json: { error: "Seller profile required" }, status: :forbidden
-          end
-
-          @dish = current_user.seller_profile.dishes.build(dish_params)
+          @dish = seller_profile.dishes.build(dish_params)
 
           if @dish.save
             attach_photos if params[:dish][:photos].present?
@@ -93,7 +91,7 @@ module Api
         private
 
         def set_dish
-          @dish = current_user.seller_profile.dishes.kept.find(params[:id])
+          @dish = seller_profile.dishes.kept.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: "Dish not found" }, status: :not_found
         end

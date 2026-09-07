@@ -51,6 +51,31 @@ class Api::V1::DiscardTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
   end
 
+  # Sem isto, o dono de um perfil descartado continuaria criando prato e
+  # cardapio pendurados num perfil que a vitrine nao mostra mais.
+  test "com o perfil descartado o painel responde como quem nao tem perfil" do
+    delete "/api/v1/seller/profile", headers: @headers
+
+    assert_response :ok
+
+    [ [ :get, "/api/v1/seller/dishes" ],
+      [ :get, "/api/v1/seller/weekly_menus" ],
+      [ :get, "/api/v1/seller/selling_locations" ],
+      [ :get, "/api/v1/seller/position" ] ].each do |verbo, url|
+      public_send(verbo, url, headers: @headers)
+
+      assert_response :forbidden, "#{verbo.to_s.upcase} #{url} respondeu #{response.status}"
+    end
+
+    assert_no_difference -> { Dish.count } do
+      post "/api/v1/seller/dishes",
+           params: { dish: { name: "Bife acebolado", base_price: 24.0 } },
+           headers: @headers
+
+      assert_response :forbidden
+    end
+  end
+
   test "as avaliacoes da marmiteira descartada somem da lista publica" do
     delete "/api/v1/seller/profile", headers: @headers
 

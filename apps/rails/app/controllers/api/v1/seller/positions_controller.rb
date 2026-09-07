@@ -18,7 +18,7 @@ module Api
       #   PUT  /api/v1/seller/position                        -> regrava a posicao
       #   POST /api/v1/seller/selling_locations/:id/leave      -> fecha o turno
       class PositionsController < BaseController
-        before_action :require_seller_profile
+        include SellerProfileScope
 
         # GET /api/v1/seller/position
         def show
@@ -53,16 +53,6 @@ module Api
         end
 
         private
-
-        def seller_profile
-          current_user.seller_profile
-        end
-
-        def require_seller_profile
-          return if seller_profile
-
-          render json: { error: "Seller profile required" }, status: :forbidden
-        end
 
         # Coordenada ausente ou fora de faixa e erro alto: sem fallback, sem
         # `to_f` silencioso que transforma lixo em (0, 0) no Golfo da Guine.

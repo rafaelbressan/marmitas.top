@@ -2,11 +2,13 @@ module Api
   module V1
     module Seller
       class WeeklyMenusController < BaseController
+        include SellerProfileScope
+
         before_action :set_menu, only: [ :show, :update, :destroy, :add_dish, :remove_dish, :duplicate, :whatsapp_text ]
 
         # GET /api/v1/seller/weekly_menus
         def index
-          @menus = current_user.seller_profile.weekly_menus.kept.order(available_from: :desc)
+          @menus = seller_profile.weekly_menus.kept.order(available_from: :desc)
 
           # Filter by status
           @menus = case params[:status]
@@ -32,11 +34,7 @@ module Api
 
         # POST /api/v1/seller/weekly_menus
         def create
-          unless current_user.seller_profile
-            return render json: { error: "Seller profile required" }, status: :forbidden
-          end
-
-          @menu = current_user.seller_profile.weekly_menus.build(menu_params)
+          @menu = seller_profile.weekly_menus.build(menu_params)
 
           if @menu.save
             render json: {
@@ -74,7 +72,7 @@ module Api
 
         # POST /api/v1/seller/weekly_menus/:id/add_dish
         def add_dish
-          dish = current_user.seller_profile.dishes.kept.find(params[:dish_id])
+          dish = seller_profile.dishes.kept.find(params[:dish_id])
 
           menu_dish = @menu.weekly_menu_dishes.build(
             dish: dish,
@@ -144,7 +142,7 @@ module Api
         private
 
         def set_menu
-          @menu = current_user.seller_profile.weekly_menus.kept.find(params[:id])
+          @menu = seller_profile.weekly_menus.kept.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: "Menu not found" }, status: :not_found
         end
