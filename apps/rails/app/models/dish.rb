@@ -1,4 +1,8 @@
 class Dish < ApplicationRecord
+  # Descartar, nunca apagar: `weekly_menu_dishes` guarda quanto saiu em cada
+  # cardapio, e `dependent: :destroy` levaria esse registro junto (BRES-140).
+  include Discard::Model
+
   # Associations
   belongs_to :seller_profile
   has_many :weekly_menu_dishes, dependent: :destroy

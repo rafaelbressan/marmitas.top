@@ -188,7 +188,8 @@ CREATE TABLE public.dishes (
     active boolean DEFAULT true NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    favorites_count integer DEFAULT 0 NOT NULL
+    favorites_count integer DEFAULT 0 NOT NULL,
+    discarded_at timestamp(6) without time zone
 );
 
 
@@ -336,6 +337,7 @@ CREATE TABLE public.reviews (
     last_edited_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    discarded_at timestamp(6) without time zone,
     CONSTRAINT reviews_rating_range CHECK (((rating >= 1) AND (rating <= 5)))
 );
 
@@ -398,7 +400,8 @@ CREATE TABLE public.seller_profiles (
     rating_2_count integer DEFAULT 0,
     rating_3_count integer DEFAULT 0,
     rating_4_count integer DEFAULT 0,
-    rating_5_count integer DEFAULT 0
+    rating_5_count integer DEFAULT 0,
+    discarded_at timestamp(6) without time zone
 );
 
 
@@ -438,7 +441,8 @@ CREATE TABLE public.selling_locations (
     lonlat public.geography,
     kind character varying DEFAULT 'ponto'::character varying NOT NULL,
     position_updated_at timestamp(6) without time zone,
-    CONSTRAINT selling_locations_kind_check CHECK (((kind)::text = ANY ((ARRAY['ponto'::character varying, 'circulando'::character varying])::text[])))
+    discarded_at timestamp(6) without time zone,
+    CONSTRAINT selling_locations_kind_check CHECK (((kind)::text = ANY (ARRAY[('ponto'::character varying)::text, ('circulando'::character varying)::text])))
 );
 
 
@@ -885,7 +889,8 @@ CREATE TABLE public.weekly_menu_dishes (
     price_override numeric(10,2),
     display_order integer DEFAULT 0,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    discarded_at timestamp(6) without time zone
 );
 
 
@@ -923,7 +928,7 @@ CREATE TABLE public.weekly_menus (
     total_orders_count integer DEFAULT 0 NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    deleted_at timestamp(6) without time zone
+    discarded_at timestamp(6) without time zone
 );
 
 
@@ -1394,6 +1399,13 @@ CREATE INDEX index_dishes_on_active ON public.dishes USING btree (active);
 
 
 --
+-- Name: index_dishes_on_discarded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_dishes_on_discarded_at ON public.dishes USING btree (discarded_at);
+
+
+--
 -- Name: index_dishes_on_seller_profile_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1461,6 +1473,13 @@ CREATE INDEX index_review_helpfuls_on_user_id ON public.review_helpfuls USING bt
 --
 
 CREATE INDEX index_reviews_on_created_at ON public.reviews USING btree (created_at);
+
+
+--
+-- Name: index_reviews_on_discarded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_reviews_on_discarded_at ON public.reviews USING btree (discarded_at);
 
 
 --
@@ -1562,6 +1581,13 @@ CREATE INDEX index_seller_profiles_on_currently_active ON public.seller_profiles
 
 
 --
+-- Name: index_seller_profiles_on_discarded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seller_profiles_on_discarded_at ON public.seller_profiles USING btree (discarded_at);
+
+
+--
 -- Name: index_seller_profiles_on_leaving_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1580,6 +1606,13 @@ CREATE UNIQUE INDEX index_seller_profiles_on_user_id ON public.seller_profiles U
 --
 
 CREATE INDEX index_seller_profiles_on_verified ON public.seller_profiles USING btree (verified);
+
+
+--
+-- Name: index_selling_locations_on_discarded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_selling_locations_on_discarded_at ON public.selling_locations USING btree (discarded_at);
 
 
 --
@@ -1821,6 +1854,13 @@ CREATE INDEX index_users_on_role ON public.users USING btree (role);
 
 
 --
+-- Name: index_weekly_menu_dishes_on_discarded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_weekly_menu_dishes_on_discarded_at ON public.weekly_menu_dishes USING btree (discarded_at);
+
+
+--
 -- Name: index_weekly_menu_dishes_on_dish_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1835,17 +1875,17 @@ CREATE INDEX index_weekly_menu_dishes_on_display_order ON public.weekly_menu_dis
 
 
 --
+-- Name: index_weekly_menu_dishes_on_menu_and_dish_kept; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_weekly_menu_dishes_on_menu_and_dish_kept ON public.weekly_menu_dishes USING btree (weekly_menu_id, dish_id) WHERE (discarded_at IS NULL);
+
+
+--
 -- Name: index_weekly_menu_dishes_on_weekly_menu_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_weekly_menu_dishes_on_weekly_menu_id ON public.weekly_menu_dishes USING btree (weekly_menu_id);
-
-
---
--- Name: index_weekly_menu_dishes_on_weekly_menu_id_and_dish_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_weekly_menu_dishes_on_weekly_menu_id_and_dish_id ON public.weekly_menu_dishes USING btree (weekly_menu_id, dish_id);
 
 
 --
@@ -1870,10 +1910,10 @@ CREATE INDEX index_weekly_menus_on_available_until ON public.weekly_menus USING 
 
 
 --
--- Name: index_weekly_menus_on_deleted_at; Type: INDEX; Schema: public; Owner: -
+-- Name: index_weekly_menus_on_discarded_at; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_weekly_menus_on_deleted_at ON public.weekly_menus USING btree (deleted_at);
+CREATE INDEX index_weekly_menus_on_discarded_at ON public.weekly_menus USING btree (discarded_at);
 
 
 --
@@ -2081,6 +2121,8 @@ ALTER TABLE ONLY public.seller_profiles
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260907234500'),
+('20260907230000'),
 ('20260907220100'),
 ('20260907220000'),
 ('20251114144337'),

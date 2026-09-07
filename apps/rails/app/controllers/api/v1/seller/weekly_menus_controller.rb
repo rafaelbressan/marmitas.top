@@ -2,11 +2,13 @@ module Api
   module V1
     module Seller
       class WeeklyMenusController < BaseController
+        include SellerProfileScope
+
         before_action :set_menu, only: [ :show, :update, :destroy, :add_dish, :remove_dish, :duplicate, :whatsapp_text ]
 
         # GET /api/v1/seller/weekly_menus
         def index
-          @menus = current_user.seller_profile.weekly_menus.order(available_from: :desc)
+          @menus = seller_profile.weekly_menus.kept.order(available_from: :desc)
 
           # Filter by status
           @menus = case params[:status]
@@ -32,11 +34,7 @@ module Api
 
         # POST /api/v1/seller/weekly_menus
         def create
-          unless current_user.seller_profile
-            return render json: { error: "Seller profile required" }, status: :forbidden
-          end
-
-          @menu = current_user.seller_profile.weekly_menus.build(menu_params)
+          @menu = seller_profile.weekly_menus.build(menu_params)
 
           if @menu.save
             render json: {
@@ -68,19 +66,19 @@ module Api
             }, status: :unprocessable_entity
           end
 
-          @menu.destroy
+          @menu.discard
           render json: { message: "Daily menu deleted successfully" }, status: :ok
         end
 
         # POST /api/v1/seller/weekly_menus/:id/add_dish
         def add_dish
-          dish = current_user.seller_profile.dishes.find(params[:dish_id])
+          dish = seller_profile.dishes.kept.find(params[:dish_id])
 
           menu_dish = @menu.weekly_menu_dishes.build(
             dish: dish,
             available_quantity: params[:available_quantity],
             price_override: params[:price_override],
-            display_order: params[:display_order] || @menu.weekly_menu_dishes.count
+            display_order: params[:display_order] || @menu.weekly_menu_dishes.kept.count
           )
 
           if menu_dish.save
@@ -96,14 +94,17 @@ module Api
         end
 
         # DELETE /api/v1/seller/weekly_menus/:id/remove_dish/:dish_id
+        #
+        # Descarta, nao apaga: a linha guarda quanto foi anunciado e quanto sobrou
+        # naquele dia.
         def remove_dish
-          menu_dish = @menu.weekly_menu_dishes.find_by(dish_id: params[:dish_id])
+          menu_dish = @menu.weekly_menu_dishes.kept.find_by(dish_id: params[:dish_id])
 
           unless menu_dish
             return render json: { error: "Dish not in menu" }, status: :not_found
           end
 
-          menu_dish.destroy
+          menu_dish.discard
           render json: {
             message: "Dish removed from menu successfully",
             menu: menu_detail(@menu.reload)
@@ -141,7 +142,7 @@ module Api
         private
 
         def set_menu
-          @menu = current_user.seller_profile.weekly_menus.find(params[:id])
+          @menu = seller_profile.weekly_menus.kept.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: "Menu not found" }, status: :not_found
         end
@@ -165,7 +166,7 @@ module Api
             available_until: menu.available_until,
             active: menu.active,
             is_available: menu.available?,
-            dishes_count: menu.weekly_menu_dishes.count,
+            dishes_count: menu.weekly_menu_dishes.kept.count,
             total_available_quantity: menu.total_available_quantity,
             total_orders_count: menu.total_orders_count,
             created_at: menu.created_at
@@ -182,7 +183,7 @@ module Api
             active: menu.active,
             is_available: menu.available?,
             total_orders_count: menu.total_orders_count,
-            dishes: menu.weekly_menu_dishes.ordered.map { |menu_dish| menu_dish_response(menu_dish) },
+            dishes: menu.weekly_menu_dishes.kept.ordered.map { |menu_dish| menu_dish_response(menu_dish) },
             created_at: menu.created_at,
             updated_at: menu.updated_at
           }

@@ -18,7 +18,7 @@ module Api
         def show
           profile = current_user.seller_profile
 
-          unless profile
+          unless profile&.kept?
             return render json: {
               error: "Você precisa criar um perfil de marmiteiro antes de ver o painel."
             }, status: :forbidden
@@ -99,8 +99,8 @@ module Api
         # Mesmo ranking de GET /api/v1/seller/dishes/favorites_stats, cortado no
         # que cabe na tela.
         def top_dishes(profile)
-          total_favorites = profile.dishes.sum(:favorites_count)
-          dishes = profile.dishes.order(favorites_count: :desc, name: :asc).limit(TOP_DISHES_LIMIT)
+          total_favorites = profile.dishes.kept.sum(:favorites_count)
+          dishes = profile.dishes.kept.order(favorites_count: :desc, name: :asc).limit(TOP_DISHES_LIMIT)
 
           {
             total_favorites: total_favorites,
@@ -124,7 +124,7 @@ module Api
 
           return { menu: nil, announced_quantity: 0, remaining_quantity: 0, sold_quantity: 0, dishes: [] } unless menu
 
-          menu_dishes = menu.weekly_menu_dishes.ordered.includes(:dish).to_a
+          menu_dishes = menu.weekly_menu_dishes.kept.ordered.includes(:dish).to_a
           announced = menu_dishes.sum(&:available_quantity)
           remaining = menu_dishes.sum(&:remaining_quantity)
 

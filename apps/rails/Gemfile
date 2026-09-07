@@ -43,6 +43,11 @@ gem "image_processing", "~> 1.2"
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 gem "rack-cors"
 
+# Soft deletion (discarded_at). Ver BRES-140: nada e apagado do banco — deletar
+# no produto e descartar, e a cascata desce pela arvore de dono. Mesmo gem e
+# mesma invariante do egerian.
+gem "discard", "~> 2.0"
+
 # Authentication & Authorization
 gem "devise", "~> 4.9"
 gem "devise-jwt", "~> 0.12"

@@ -5,7 +5,9 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   # GET /api/v1/admin/reviews
   def index
-    @reviews = Review.includes(:user, :seller_profile)
+    # A fila de moderacao so ve avaliacao viva: uma avaliacao descartada ja saiu
+    # da API e nao ha o que moderar nela.
+    @reviews = Review.kept.includes(:user, :seller_profile)
 
     # Filter by moderation status
     case params[:status]
@@ -17,7 +19,7 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
       @reviews = @reviews.removed
     else
       @reviews = @reviews.where(moderation_status: [ "under_review", "removed" ])
-                         .or(Review.where(flagged: true))
+                         .or(Review.kept.where(flagged: true))
     end
 
     @reviews = @reviews.order(created_at: :desc)
@@ -91,7 +93,7 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
   private
 
   def set_review
-    @review = Review.find(params[:id])
+    @review = Review.kept.find(params[:id])
   end
 
   def require_admin!
@@ -102,10 +104,10 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   def moderation_stats
     {
-      flagged_count: Review.flagged_reviews.count,
-      under_review_count: Review.under_review.count,
-      removed_count: Review.removed.count,
-      total_pending: Review.where(moderation_status: [ "under_review" ]).or(Review.where(flagged: true)).count
+      flagged_count: Review.kept.flagged_reviews.count,
+      under_review_count: Review.kept.under_review.count,
+      removed_count: Review.kept.removed.count,
+      total_pending: Review.kept.where(moderation_status: [ "under_review" ]).or(Review.kept.where(flagged: true)).count
     }
   end
 

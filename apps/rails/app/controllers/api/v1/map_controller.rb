@@ -15,7 +15,8 @@ module Api
         radius = params[:radius]&.to_f || 10.0 # Default 10km for map view
 
         # Get nearby active sellers with their current locations
-        @sellers = SellerProfile.verified
+        @sellers = SellerProfile.kept
+                                 .verified
                                  .nearby(lat, lng, radius)
                                  .includes(:user, :current_location)
                                  .limit(100)
@@ -90,7 +91,8 @@ module Api
         sw_lng = params[:sw_lng].to_f
 
         # Find sellers within the bounding box
-        @sellers = SellerProfile.verified
+        @sellers = SellerProfile.kept
+                                 .verified
                                  .broadcasting
                                  .joins(:current_location)
                                  .where(

@@ -1,4 +1,6 @@
 class SellingLocation < ApplicationRecord
+  include Discard::Model
+
   # `ponto`      — lugar salvo do marmiteiro. O pino nao anda.
   # `circulando` — a linha unica do ambulante, regravada durante o turno pelo
   #                PUT /api/v1/seller/position. Nao entra na conta dos 3 pontos
@@ -67,7 +69,8 @@ class SellingLocation < ApplicationRecord
   # Só os pontos salvos entram no limite. A linha "circulando" é operacional, não
   # é um lugar que o marmiteiro escolheu guardar.
   def maximum_locations_per_seller
-    if seller_profile.selling_locations.pontos.count >= MAXIMUM_PONTOS_PER_SELLER
+    # `kept`: um ponto descartado nao ocupa uma das tres vagas.
+    if seller_profile.selling_locations.kept.pontos.count >= MAXIMUM_PONTOS_PER_SELLER
       errors.add(:base, "Cannot have more than #{MAXIMUM_PONTOS_PER_SELLER} selling locations")
     end
   end

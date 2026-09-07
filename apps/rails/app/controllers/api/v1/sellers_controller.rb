@@ -5,7 +5,7 @@ module Api
 
       # GET /api/v1/sellers
       def index
-        @sellers = SellerProfile.verified.includes(:user)
+        @sellers = SellerProfile.kept.verified.includes(:user)
         @sellers = apply_filters(@sellers)
 
         # Prioritize favorited sellers if user is authenticated
@@ -30,7 +30,7 @@ module Api
 
       # GET /api/v1/sellers/:id
       def show
-        @seller = SellerProfile.find(params[:id])
+        @seller = SellerProfile.kept.find(params[:id])
         render json: { seller: seller_detail(@seller) }, status: :ok
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Seller not found" }, status: :not_found
@@ -47,7 +47,8 @@ module Api
         radius = params[:radius]&.to_f || 5.0
 
         # Use PostGIS-based nearby search
-        @sellers = SellerProfile.verified
+        @sellers = SellerProfile.kept
+                                 .verified
                                  .nearby(lat, lng, radius)
                                  .includes(:user, :current_location)
                                  .limit(50)
@@ -142,7 +143,7 @@ module Api
           current_location: live_position_visible?(seller.current_location) ? location_summary(seller.current_location) : nil,
           # So os pontos salvos. A linha "circulando" e posicao ao vivo, nao um
           # lugar publicado.
-          selling_locations: seller.selling_locations.pontos.map { |loc| location_summary(loc) }
+          selling_locations: seller.selling_locations.kept.pontos.map { |loc| location_summary(loc) }
         }
         detail[:is_favorited] = current_user.favorited?(seller) if current_user.present?
         detail
@@ -155,7 +156,7 @@ module Api
           description: menu.description,
           available_from: menu.available_from,
           available_until: menu.available_until,
-          dishes_count: menu.weekly_menu_dishes.count,
+          dishes_count: menu.weekly_menu_dishes.kept.count,
           total_available_quantity: menu.total_available_quantity
         }
       end
