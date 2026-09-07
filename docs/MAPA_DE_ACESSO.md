@@ -85,6 +85,8 @@ moderação. Essa regra continua no model; a policy chama, não reescreve.
 | `POST seller/selling_locations` | ❌ | ❌ | ✅ | ✅ | ❌ | `Seller::SellingLocationPolicy#create?` |
 | `GET/PATCH/DELETE seller/selling_locations/:id` | ❌ | ❌ | ✅ | ❌ | ❌ | escopo + `Seller::SellingLocationPolicy` |
 | `POST .../arrive`, `POST .../leave` | ❌ | ❌ | ✅ | ❌ | ❌ | escopo + `Seller::SellingLocationPolicy` |
+| `GET/PUT seller/position` | ❌ | ❌ | ✅ (a sua) | ✅ (a sua) | ❌ | `Seller::PositionPolicy` |
+| `PATCH seller/weekly_menus/:id/dishes/:dish_id/quantity` | ❌ | ❌ | ✅ | ❌ | ❌ | escopo + `Seller::WeeklyMenuDishPolicy#update?` |
 
 O admin não entra no painel de ninguém: não tem perfil de marmiteiro e
 `owns_record?` fecha.

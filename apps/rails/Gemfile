@@ -20,6 +20,14 @@ gem "solid_cache"
 gem "solid_queue"
 gem "solid_cable"
 
+# json 3.0 removeu o hash posicional de `JSON.parse(source, options)`, e o
+# `ActiveSupport::JSON.decode` do Rails 8.1.3 ainda chama exatamente assim. Com
+# json 3.0 instalado, ler qualquer coluna jsonb (`seller_profiles.operating_hours`,
+# `dishes.dietary_tags`, `users.notification_preferences`) levanta
+# `ArgumentError: wrong number of arguments`. Solta o pino quando o Rails corrigir
+# a chamada.
+gem "json", "< 3.0"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
@@ -53,14 +61,6 @@ gem "jsonapi-serializer", "~> 2.2"
 # Soft deletion (discarded_at). Nada e destruido: apagar um prato apagava a
 # linha dele em todo cardapio passado, que e o registro de quanto saiu no dia.
 gem "discard", "~> 2.0"
-
-# ATENCAO: preso abaixo do 3 de proposito. `ActiveSupport::JSON.decode` chama
-# `JSON.parse(json, quirks_mode: true)`, e o json 3.0 tirou o segundo argumento
-# de `parse` — com ele, toda leitura de coluna jsonb (`dietary_tags`,
-# `operating_hours`, `notification_preferences`) estoura com ArgumentError.
-# Soltar quando o Rails parar de passar `quirks_mode:`. Ver BRES-143; o
-# `test/models/jsonb_columns_test.rb` derruba a build se o pin sumir.
-gem "json", "~> 2.16"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem

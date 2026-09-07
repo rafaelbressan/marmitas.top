@@ -222,6 +222,31 @@ recolocado no cardápio, e as duas passagens ficam no banco.
 são registros que a própria pessoa refaz com um toque e não guardam histórico
 de ninguém.
 
+## Trabalhos em segundo plano (Solid Queue)
+
+As tabelas do Solid Queue ficam no **banco principal**, criadas por migration
+(`db/migrate/20260907220100_create_solid_queue_tables.rb`), não num banco
+separado com `db/queue_schema.rb` como o `solid_queue:install` gera. O motivo é o
+mesmo `schema_format = :sql` da seção anterior: o carregador multi-banco do Rails
+não sabe ler um `queue_schema.rb` quando o formato é SQL.
+
+Em produção o adaptador é o `solid_queue` e o worker sobe com:
+
+```bash
+bin/jobs
+```
+
+Os trabalhos recorrentes estão em `config/recurring.yml`:
+
+| Trabalho | Quando | O que faz |
+|---|---|---|
+| `shut_off_expired_broadcasts` | a cada 5 min | desliga o anúncio de quem passou do `leaving_at` |
+
+O anúncio vencido tem **duas** proteções, de propósito. O job desliga, e o escopo
+`SellerProfile.broadcasting` filtra por validade em toda consulta de leitura
+(`nearby`, `map/sellers`, `map/bounds`, `sellers?active_only=true`). Se o worker
+estiver parado ou atrasado, o mapa continua sem mentir.
+
 ## CORS
 
 Configurado em `config/initializers/cors.rb` para `localhost:3000`,
