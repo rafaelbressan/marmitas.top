@@ -126,18 +126,35 @@ largo_do_machado:
 
 ### `parallelize` com PostGIS
 
-Cada worker paralelo ganha o próprio banco (`marmitas_top_test_0`, `_1`, ...),
-criado a partir do `db/structure.sql`. Como o schema é versionado em SQL, o dump
-começa com `CREATE EXTENSION IF NOT EXISTS postgis` e cada banco paralelo nasce
-com a extensão, a coluna `geography` e o índice GiST — nada a configurar à parte.
-Com o `db/schema.rb` antigo, os bancos paralelos sairiam sem nem a tabela
-`selling_locations`.
+Duas coisas separadas, ambas resolvidas.
 
-O Rails só paraleliza acima de 50 testes, então hoje a suíte roda em um processo
-só. Para exercitar os bancos paralelos de propósito:
+**1. A extensão nos bancos paralelos.** Cada worker ganha o próprio banco
+(`marmitas_top_test_0`, `_1`, ...), criado a partir do `db/structure.sql`. Como o
+schema é versionado em SQL, o dump começa com
+`CREATE EXTENSION IF NOT EXISTS postgis` e cada banco paralelo nasce com a
+extensão, a coluna `geography` e o índice GiST. Com o `db/schema.rb` antigo eles
+sairiam sem nem a tabela `selling_locations`.
+
+**2. O truncate que apaga os SRIDs.** Esta é a que morde de verdade, e só na
+segunda execução. Quando o banco paralelo já existe e o schema está em dia, o
+Rails não o recria: chama `truncate_tables(*conn.tables)`. `spatial_ref_sys` é
+uma tabela de verdade, criada e populada pela extensão com ~8500 sistemas de
+coordenadas, e o adapter `postgresql` puro não sabe que ela é da extensão — leva
+junto. A partir daí todo `ST_SetSRID(..., 4326)` morre com
+`Cannot find SRID (4326) in spatial_ref_sys`.
+
+O sintoma é traiçoeiro: **a primeira rodada passa e a segunda quebra.** Numa
+máquina limpa e no CI, que sempre começam do zero, ele fica escondido.
+
+`config/initializers/postgis.rb` exclui `spatial_ref_sys` do truncate — é a mesma
+exclusão que o `activerecord-postgis-adapter` faz nativamente. O teste
+`test/database_schema_test.rb` guarda o comportamento.
+
+Para exercitar os bancos paralelos de propósito, **rodando duas vezes**:
 
 ```bash
-PARALLEL_WORKERS=3 bin/rails test
+PARALLEL_WORKERS=4 bin/rails test
+PARALLEL_WORKERS=4 bin/rails test   # a segunda é a que pega o bug do truncate
 ```
 
 ## Banco de dados
