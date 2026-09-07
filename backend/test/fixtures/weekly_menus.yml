@@ -1,0 +1,32 @@
+# Disponivel agora: `WeeklyMenu.available_now` tem que devolver este.
+marli_semana_atual:
+  seller_profile: marli_marmitas
+  title: Cardapio da semana
+  description: Pratos disponiveis nesta semana.
+  available_from: <%= 2.days.ago.to_fs(:db) %>
+  available_until: <%= 4.days.from_now.to_fs(:db) %>
+  active: true
+  total_orders_count: 12
+
+# Ja fechado: serve de contraste para o escopo `past`.
+marli_semana_passada:
+  seller_profile: marli_marmitas
+  title: Cardapio da semana passada
+  available_from: <%= 12.days.ago.to_fs(:db) %>
+  available_until: <%= 5.days.ago.to_fs(:db) %>
+  active: true
+  total_orders_count: 30
+
+jorge_semana_atual:
+  seller_profile: jorge_quentinhas
+  title: Cardapio da semana
+  available_from: <%= 1.day.ago.to_fs(:db) %>
+  available_until: <%= 5.days.from_now.to_fs(:db) %>
+  active: true
+
+ana_semana_atual:
+  seller_profile: ana_verdinha
+  title: Cardapio vegano da semana
+  available_from: <%= 1.day.ago.to_fs(:db) %>
+  available_until: <%= 5.days.from_now.to_fs(:db) %>
+  active: true

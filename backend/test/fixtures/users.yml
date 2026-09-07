@@ -1,0 +1,46 @@
+<% senha = Devise::Encryptor.digest(User, "senha123") %>
+
+DEFAULTS: &DEFAULTS
+  encrypted_password: <%= senha %>
+  active: true
+  is_admin: false
+
+# Administradora: modera avaliacoes.
+admin:
+  <<: *DEFAULTS
+  name: Administradora
+  email: admin@marmitas.top
+  phone: "21988110000"
+  is_admin: true
+
+# Consumidores.
+carla:
+  <<: *DEFAULTS
+  name: Carla Ferraz
+  email: carla.ferraz@example.com
+  phone: "21988119991"
+
+diego:
+  <<: *DEFAULTS
+  name: Diego Muniz
+  email: diego.muniz@example.com
+  phone: "21988119992"
+
+# Donos dos perfis de marmiteiro.
+marli:
+  <<: *DEFAULTS
+  name: Marli Souza
+  email: dona.marli@marmitas.top
+  phone: "21988110001"
+
+jorge:
+  <<: *DEFAULTS
+  name: Jorge Ribeiro
+  email: seu.jorge@marmitas.top
+  phone: "21988110002"
+
+ana:
+  <<: *DEFAULTS
+  name: Ana Prado
+  email: ana.vegana@marmitas.top
+  phone: "11988220001"

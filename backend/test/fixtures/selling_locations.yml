@@ -1,0 +1,42 @@
+# A coluna `lonlat` e `geography(4326)` e as fixtures entram direto no banco,
+# sem passar pelo callback `update_lonlat_from_coordinates` do modelo. Por isso o
+# valor vai escrito a mao em EWKT — `SRID=4326;POINT(<longitude> <latitude>)`,
+# longitude primeiro. Sem isso a coluna fica NULL e todo `ST_DWithin` some.
+
+largo_do_machado:
+  seller_profile: marli_marmitas
+  name: Largo do Machado
+  address: Largo do Machado, Catete
+  latitude: -22.929500
+  longitude: -43.177400
+  lonlat: "SRID=4326;POINT(-43.1774 -22.9295)"
+  notes: Do lado da banca de jornal, das 11h as 14h.
+
+praca_sao_salvador:
+  seller_profile: marli_marmitas
+  name: Praca Sao Salvador
+  address: Praca Sao Salvador, Laranjeiras
+  latitude: -22.933800
+  longitude: -43.185600
+  lonlat: "SRID=4326;POINT(-43.1856 -22.9338)"
+  notes: Terca e quinta.
+
+# ~600 m do Largo do Machado: cai dentro do raio da busca, mas o Jorge nao esta
+# anunciando.
+rua_do_catete:
+  seller_profile: jorge_quentinhas
+  name: Obra da Rua do Catete
+  address: Rua do Catete, Catete
+  latitude: -22.925000
+  longitude: -43.176300
+  lonlat: "SRID=4326;POINT(-43.1763 -22.925)"
+  notes: Chega 11h30 e some rapido.
+
+benedito_calixto:
+  seller_profile: ana_verdinha
+  name: Praca Benedito Calixto
+  address: Praca Benedito Calixto, Pinheiros
+  latitude: -23.560500
+  longitude: -46.685500
+  lonlat: "SRID=4326;POINT(-46.6855 -23.5605)"
+  notes: Sabado de manha na feira.

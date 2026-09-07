@@ -1,0 +1,32 @@
+feijoada:
+  seller_profile: marli_marmitas
+  name: Feijoada completa
+  description: Feijoada com arroz, couve, farofa e laranja.
+  base_price: 25.00
+  dietary_tags: []
+  active: true
+  favorites_count: 1
+
+frango_grelhado:
+  seller_profile: marli_marmitas
+  name: Frango grelhado com legumes
+  description: Peito de frango grelhado, arroz integral e legumes no vapor.
+  base_price: 22.00
+  dietary_tags: [ gluten_free, low_carb ]
+  active: true
+
+carne_de_panela:
+  seller_profile: jorge_quentinhas
+  name: Carne de panela
+  description: Acem cozido lentamente com arroz, feijao e farofa.
+  base_price: 20.00
+  dietary_tags: []
+  active: true
+
+feijoada_vegana:
+  seller_profile: ana_verdinha
+  name: Feijoada vegana
+  description: Feijao preto com legumes defumados, arroz e couve.
+  base_price: 27.00
+  dietary_tags: [ vegan, vegetarian, dairy_free ]
+  active: true

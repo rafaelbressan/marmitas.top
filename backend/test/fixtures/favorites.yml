@@ -1,0 +1,10 @@
+# `favoritable` e polimorfico: o tipo vai entre parenteses no rotulo.
+# Os contadores em seller_profiles.yml e dishes.yml acompanham estes registros.
+
+carla_segue_marli:
+  user: carla
+  favoritable: marli_marmitas (SellerProfile)
+
+carla_curte_feijoada:
+  user: carla
+  favoritable: feijoada (Dish)

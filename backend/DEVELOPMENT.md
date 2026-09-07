@@ -29,7 +29,7 @@ git clone https://github.com/rafaelbressan/marmitas.top.git
 cd marmitas.top
 
 # 1. Banco de dados (Postgres 16 + PostGIS 3.4), na raiz do repositório
-docker compose up -d
+docker compose -f docker-compose.dev.yml up -d
 
 # 2. Variáveis de ambiente
 cd backend
@@ -39,8 +39,8 @@ openssl rand -hex 64            # cole o resultado em DEVISE_JWT_SECRET_KEY no .
 # 3. Dependências
 bundle install
 
-# 4. Banco: cria, carrega db/structure.sql e popula
-bin/rails db:prepare db:seed
+# 4. Banco: cria, carrega db/structure.sql e roda db/seeds.rb
+bin/rails db:prepare
 
 # 5. Sobe
 bin/rails server
@@ -55,14 +55,15 @@ bin/rails runner 'puts SellingLocation.count'
 curl "http://localhost:3000/api/v1/sellers/nearby?latitude=-22.9295&longitude=-43.1774&radius=5"
 ```
 
-### Se a porta 5432 já estiver ocupada
+### Portas
 
-Escolha outra na subida do container e aponte o app para ela:
+O container escuta em `127.0.0.1:5435`, seguindo o padrão da casa: a 5432 é do
+`gbrain`, a 5433 do `benevoles` e a 5434 do `egerian`. Para usar outra:
 
 ```bash
-POSTGRES_PORT=5442 docker compose up -d
+POSTGRES_PORT=5555 docker compose -f docker-compose.dev.yml up -d
 # e no backend/.env
-DATABASE_PORT=5442
+DATABASE_PORT=5555
 ```
 
 ## Variáveis de ambiente
@@ -96,15 +97,48 @@ Senha de todos os usuários semeados: `senha123`.
 ## Testes
 
 ```bash
-bundle exec rspec
+bin/rails test
 ```
 
-RSpec + FactoryBot + shoulda-matchers já estão configurados
-(`spec/rails_helper.rb`, `spec/support/`). `create(:user)` funciona sem prefixo.
+Minitest + fixtures, no padrão do `egerian` e do `benevoles`: `test/test_helper.rb`
+com `parallelize(workers: :number_of_processors)` e `fixtures :all`. Não há RSpec,
+FactoryBot nem shoulda-matchers no projeto.
 
-Hoje existem apenas os guardas de ambiente (`spec/database_schema_spec.rb`,
-`spec/factories_spec.rb`) e 3 stubs pendentes do gerador. Testes de regra de
-negócio são outra issue.
+As fixtures de `test/fixtures/` descrevem três marmiteiros coerentes entre si —
+Dona Marli anunciando no Largo do Machado (RJ), Seu Jorge parado a 600 m dali, e
+a Verdinha anunciando em Pinheiros (SP) — com pratos, cardápio, avaliações,
+favoritos e tokens de dispositivo.
+
+### `selling_locations` em fixture
+
+Fixture entra direto no banco, sem passar pelos callbacks do modelo. O
+`before_save :update_lonlat_from_coordinates` de `SellingLocation` não roda, e
+`latitude`/`longitude` sozinhas deixam `lonlat` nulo — aí todo `ST_DWithin` some.
+
+A solução é escrever o EWKT à mão no YAML, **longitude primeiro**:
+
+```yaml
+largo_do_machado:
+  latitude: -22.929500
+  longitude: -43.177400
+  lonlat: "SRID=4326;POINT(-43.1774 -22.9295)"
+```
+
+### `parallelize` com PostGIS
+
+Cada worker paralelo ganha o próprio banco (`marmitas_top_test_0`, `_1`, ...),
+criado a partir do `db/structure.sql`. Como o schema é versionado em SQL, o dump
+começa com `CREATE EXTENSION IF NOT EXISTS postgis` e cada banco paralelo nasce
+com a extensão, a coluna `geography` e o índice GiST — nada a configurar à parte.
+Com o `db/schema.rb` antigo, os bancos paralelos sairiam sem nem a tabela
+`selling_locations`.
+
+O Rails só paraleliza acima de 50 testes, então hoje a suíte roda em um processo
+só. Para exercitar os bancos paralelos de propósito:
+
+```bash
+PARALLEL_WORKERS=3 bin/rails test
+```
 
 ## Banco de dados
 
@@ -130,8 +164,8 @@ Comandos úteis:
 ```bash
 bin/rails db:prepare        # cria e carrega o structure.sql
 bin/rails db:migrate        # aplica migrations e regrava o structure.sql
-bin/rails db:drop db:prepare db:seed   # do zero
-docker compose down -v      # apaga o volume do Postgres também
+bin/rails db:drop db:prepare           # do zero
+docker compose -f docker-compose.dev.yml down -v   # apaga o volume também
 ```
 
 ## CORS

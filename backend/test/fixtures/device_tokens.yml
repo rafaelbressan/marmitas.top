@@ -1,0 +1,23 @@
+carla_iphone:
+  user: carla
+  token: ExponentPushToken[carla-iphone-0000000000]
+  platform: ios
+  device_name: iPhone da Carla
+  active: true
+  last_used_at: <%= 2.hours.ago.to_fs(:db) %>
+
+diego_android:
+  user: diego
+  token: ExponentPushToken[diego-android-111111111]
+  platform: android
+  device_name: Moto G do Diego
+  active: true
+  last_used_at: <%= 1.day.ago.to_fs(:db) %>
+
+# Token revogado: prova o escopo `DeviceToken.active`.
+diego_android_antigo:
+  user: diego
+  token: ExponentPushToken[diego-android-222222222]
+  platform: web
+  device_name: Navegador do Diego
+  active: false
