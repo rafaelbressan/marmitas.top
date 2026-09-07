@@ -3,6 +3,15 @@ class SellerProfile < ApplicationRecord
   DEFAULT_BROADCAST_DURATION = 12.hours
   MAX_BROADCAST_DURATION = 96.hours
 
+  # Nome da linha "circulando" criada sob demanda para o ambulante.
+  ROAMING_LOCATION_NAME = "Circulando"
+
+  # Turno fechado: nao ha para onde escrever a posicao ao vivo.
+  class ShiftClosedError < StandardError; end
+
+  # Turno aberto num ponto fixo: esse pino nao pode andar no mapa.
+  class FixedShiftError < StandardError; end
+
   # Associations
   belongs_to :user
   has_many :dishes, dependent: :destroy
@@ -27,14 +36,25 @@ class SellerProfile < ApplicationRecord
   # Scopes
   scope :verified, -> { where(verified: true) }
   scope :active, -> { where(currently_active: true) }
+
+  # O anuncio so vale ate `leaving_at`. O job recorrente desliga o que venceu,
+  # mas as consultas de leitura nao dependem dele: um job atrasado ou parado nao
+  # pode fazer o mapa mentir.
+  scope :broadcasting, lambda {
+    where(currently_active: true)
+      .where("seller_profiles.leaving_at IS NULL OR seller_profiles.leaving_at > ?", Time.current)
+  }
+  scope :with_expired_broadcast, lambda {
+    where(currently_active: true).where("seller_profiles.leaving_at <= ?", Time.current)
+  }
   scope :in_city, ->(city) { where(city: city) }
 
   # Find active sellers nearby using PostGIS geography calculations
   # Returns sellers within radius_km of the given latitude/longitude
   # Only includes sellers who are currently active and broadcasting their location
   def self.nearby(lat, lng, radius_km = 5)
-    joins(:current_location)
-      .where(currently_active: true)
+    broadcasting
+      .joins(:current_location)
       .where(
         sanitize_sql_array([
           "ST_DWithin(
@@ -104,6 +124,46 @@ class SellerProfile < ApplicationRecord
     end
 
     self
+  end
+
+  # Posicao ao vivo do ambulante.
+  #
+  # Mora em `selling_locations` para que `SellerProfile.nearby`, o GeoJSON do
+  # mapa e o par arrive/leave continuem funcionando sem nenhuma mudanca.
+  def roaming_location
+    selling_locations.roaming.first
+  end
+
+  def roaming_location!
+    roaming_location || selling_locations.create!(kind: "circulando", name: ROAMING_LOCATION_NAME)
+  rescue ActiveRecord::RecordNotUnique
+    # Duas chamadas simultaneas: o indice unico parcial garante uma linha so.
+    selling_locations.roaming.first!
+  end
+
+  # Regrava a posicao do ambulante. A trava de privacidade fica aqui, no
+  # servidor: sem turno aberto nao ha coordenada gravada, e o pino de um ponto
+  # fixo nao anda.
+  def record_live_position!(latitude, longitude)
+    raise ShiftClosedError unless broadcasting?
+    raise FixedShiftError unless current_location&.roaming?
+
+    location = current_location
+    transaction do
+      location.update!(
+        latitude: latitude,
+        longitude: longitude,
+        position_updated_at: Time.current
+      )
+      update!(last_active_at: Time.current)
+    end
+
+    location
+  end
+
+  # Anuncio valido agora: ativo e ainda dentro do prazo.
+  def broadcasting?
+    currently_active? && !broadcast_expired?
   end
 
   # Check if broadcast has expired

@@ -60,3 +60,41 @@ ana_verdinha:
   arrived_at: <%= 2.hours.ago.to_fs(:db) %>
   leaving_at: <%= 4.hours.from_now.to_fs(:db) %>
   last_active_at: <%= 2.hours.ago.to_fs(:db) %>
+
+# Ambulante anunciando agora: mesmo turno dos outros (`currently_active`,
+# `arrived_at`, `leaving_at`, `current_location_id`), so que a posicao vem do
+# aparelho e e regravada na linha `circulando`.
+neide_ambulante:
+  <<: *DEFAULTS
+  user: neide
+  business_name: Marmita da Neide
+  bio: Carrinho de marmita que anda pelo Catete e Flamengo na hora do almoco.
+  phone: "21988110003"
+  whatsapp: "5521988110003"
+  city: Rio de Janeiro
+  state: RJ
+  verified: true
+  currently_active: true
+  current_location: neide_circulando
+  arrived_at: <%= 30.minutes.ago.to_fs(:db) %>
+  leaving_at: <%= 6.hours.from_now.to_fs(:db) %>
+  last_active_at: <%= 2.minutes.ago.to_fs(:db) %>
+
+# `currently_active` continua true, mas `leaving_at` ja passou. E o marmiteiro
+# que o mapa mostrava a noite inteira porque nada chamava
+# `auto_shutoff_if_expired!`.
+tiao_vencido:
+  <<: *DEFAULTS
+  user: tiao
+  business_name: Quentinhas do Tiao
+  bio: Quentinha na Praca da Bandeira, de segunda a sexta.
+  phone: "21988110004"
+  whatsapp: "5521988110004"
+  city: Rio de Janeiro
+  state: RJ
+  verified: true
+  currently_active: true
+  current_location: praca_da_bandeira
+  arrived_at: <%= 20.hours.ago.to_fs(:db) %>
+  leaving_at: <%= 8.hours.ago.to_fs(:db) %>
+  last_active_at: <%= 20.hours.ago.to_fs(:db) %>

@@ -136,7 +136,7 @@ module Api
             id: favoritable.id,
             business_name: favoritable.business_name,
             city: favoritable.city,
-            currently_active: favoritable.currently_active
+            currently_active: favoritable.broadcasting?
           }
         else
           nil
@@ -178,10 +178,10 @@ module Api
           city: seller.city,
           state: seller.state,
           verified: seller.verified,
-          currently_active: seller.currently_active,
+          currently_active: seller.broadcasting?,
           favorites_count: seller.favorites_count,
           is_favorited: true, # Since we're fetching favorited sellers
-          current_location: seller.current_location ? {
+          current_location: live_position_visible?(seller.current_location) ? {
             id: seller.current_location.id,
             name: seller.current_location.name,
             address: seller.current_location.address

@@ -22,3 +22,14 @@ module ActiveSupport
     # Add more helper methods to be used by all tests here...
   end
 end
+
+module ActionDispatch
+  class IntegrationTest
+    # Token do proprio devise-jwt, com a mesma chave e o mesmo encoder que o
+    # POST /auth/login usa. Evita passar por login em todo teste de rota.
+    def auth_headers(user)
+      token = Warden::JWTAuth::UserEncoder.new.call(user, :user, nil).first
+      { "Authorization" => "Bearer #{token}" }
+    end
+  end
+end

@@ -44,3 +44,17 @@ ana:
   name: Ana Prado
   email: ana.vegana@marmitas.top
   phone: "11988220001"
+
+# Ambulante: anda pelo Catete com o carrinho e transmite a posicao.
+neide:
+  <<: *DEFAULTS
+  name: Neide Barros
+  email: neide.ambulante@marmitas.top
+  phone: "21988110003"
+
+# Esqueceu de tocar "sai daqui" ontem: o turno venceu e o pino ficou no mapa.
+tiao:
+  <<: *DEFAULTS
+  name: Tiao Alves
+  email: tiao.esquecido@marmitas.top
+  phone: "21988110004"
