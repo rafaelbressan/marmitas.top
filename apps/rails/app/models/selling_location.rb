@@ -1,7 +1,7 @@
 class SellingLocation < ApplicationRecord
   # Associations
   belongs_to :seller_profile
-  has_many :seller_profiles_using, class_name: 'SellerProfile', foreign_key: :current_location_id, dependent: :nullify
+  has_many :seller_profiles_using, class_name: "SellerProfile", foreign_key: :current_location_id, dependent: :nullify
 
   # Validations
   validates :name, presence: true
@@ -22,7 +22,7 @@ class SellingLocation < ApplicationRecord
   end
 
   def full_address
-    [address, name].compact.join(' - ')
+    [ address, name ].compact.join(" - ")
   end
 
   # Calculate distance from a point in kilometers
@@ -38,7 +38,7 @@ class SellingLocation < ApplicationRecord
     SQL
 
     result = self.class.connection.select_value(
-      self.class.sanitize_sql_array([sql, lng, lat])
+      self.class.sanitize_sql_array([ sql, lng, lat ])
     )
 
     result&.to_f

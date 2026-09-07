@@ -4,9 +4,9 @@ class Api::V1::ReviewsController < Api::V1::BaseController
   # autenticacao para DEPOIS do `set_seller_profile`/`set_review`. Um POST sem
   # token com id inexistente respondia 404 em vez de 401. Com `skip_before_action`
   # a autenticacao volta a ser a primeira coisa que roda.
-  skip_before_action :authenticate_user!, only: [:index, :show]
-  before_action :set_seller_profile, only: [:index, :create]
-  before_action :set_review, only: [:show, :update, :destroy, :flag, :helpful]
+  skip_before_action :authenticate_user!, only: [ :index, :show ]
+  before_action :set_seller_profile, only: [ :index, :create ]
+  before_action :set_review, only: [ :show, :update, :destroy, :flag, :helpful ]
 
   # GET /api/v1/sellers/:seller_profile_id/reviews
   def index
@@ -19,14 +19,14 @@ class Api::V1::ReviewsController < Api::V1::BaseController
 
     # Apply filters
     @reviews = @reviews.by_rating(params[:rating]) if params[:rating].present?
-    @reviews = @reviews.verified if params[:verified_only] == 'true'
-    @reviews = @reviews.with_comments if params[:with_comments] == 'true'
+    @reviews = @reviews.verified if params[:verified_only] == "true"
+    @reviews = @reviews.with_comments if params[:with_comments] == "true"
 
     # Apply sorting
     case params[:sort]
-    when 'helpful'
+    when "helpful"
       @reviews = @reviews.order(helpful_count: :desc)
-    when 'rating'
+    when "rating"
       @reviews = @reviews.order(rating: :desc)
     else
       @reviews = @reviews.order(created_at: :desc)
@@ -79,7 +79,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
 
     if @review.save
       render json: {
-        message: 'Avaliação criada com sucesso',
+        message: "Avaliação criada com sucesso",
         review: review_response(@review)
       }, status: :created
     else
@@ -96,7 +96,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
       @review.update_column(:last_edited_at, Time.current)
 
       render json: {
-        message: 'Avaliação atualizada com sucesso',
+        message: "Avaliação atualizada com sucesso",
         review: review_response(@review)
       }
     else
@@ -109,7 +109,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
     authorize @review, :destroy?
 
     @review.destroy
-    render json: { message: 'Avaliação removida com sucesso' }
+    render json: { message: "Avaliação removida com sucesso" }
   end
 
   # POST /api/v1/reviews/:id/flag
@@ -119,13 +119,13 @@ class Api::V1::ReviewsController < Api::V1::BaseController
     flag_reason = params[:reason].to_s.strip
 
     if flag_reason.blank?
-      return render json: { error: 'Motivo da denúncia é obrigatório' }, status: :unprocessable_entity
+      return render json: { error: "Motivo da denúncia é obrigatório" }, status: :unprocessable_entity
     end
 
     if @review.flag!(flag_reason, current_user)
-      render json: { message: 'Avaliação denunciada com sucesso. Nossa equipe irá analisá-la.' }
+      render json: { message: "Avaliação denunciada com sucesso. Nossa equipe irá analisá-la." }
     else
-      render json: { error: 'Não foi possível denunciar esta avaliação' }, status: :unprocessable_entity
+      render json: { error: "Não foi possível denunciar esta avaliação" }, status: :unprocessable_entity
     end
   end
 
@@ -136,7 +136,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
     is_helpful = @review.toggle_helpful(current_user)
 
     render json: {
-      message: is_helpful ? 'Marcado como útil' : 'Desmarcado como útil',
+      message: is_helpful ? "Marcado como útil" : "Desmarcado como útil",
       helpful_count: @review.helpful_count,
       is_helpful: is_helpful
     }

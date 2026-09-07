@@ -22,13 +22,13 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
   # Antes: `current_user.seller_profile.dishes` com perfil nil estourava
   # NoMethodError e o cliente via 500.
   test "conta sem perfil de marmiteiro leva 403 no painel, nao 500" do
-    get "/api/v1/seller/dishes", headers: token_for(:carla)
+    get "/api/v1/seller/dishes", headers: auth_headers(users(:carla))
 
     assert_response :forbidden
   end
 
   test "um marmiteiro nao alcanca o prato do outro" do
-    get "/api/v1/seller/dishes/#{dishes(:feijoada).id}", headers: token_for(:jorge)
+    get "/api/v1/seller/dishes/#{dishes(:feijoada).id}", headers: auth_headers(users(:jorge))
 
     assert_response :not_found
   end
@@ -36,7 +36,7 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
   test "um marmiteiro nao altera o cardapio do outro" do
     patch "/api/v1/seller/weekly_menus/#{weekly_menus(:marli_semana_atual).id}",
       params: { weekly_menu: { title: "Sequestrado" } },
-      headers: token_for(:jorge)
+      headers: auth_headers(users(:jorge))
 
     assert_response :not_found
     assert_equal "Cardapio da semana", weekly_menus(:marli_semana_atual).reload.title
@@ -44,7 +44,7 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
 
   test "um marmiteiro nao anuncia presenca no ponto de venda do outro" do
     post "/api/v1/seller/selling_locations/#{selling_locations(:largo_do_machado).id}/arrive",
-      headers: token_for(:jorge)
+      headers: auth_headers(users(:jorge))
 
     assert_response :not_found
     assert_not seller_profiles(:jorge_quentinhas).reload.currently_active
@@ -54,13 +54,13 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
     get "/api/v1/admin/reviews"
     assert_response :unauthorized
 
-    get "/api/v1/admin/reviews", headers: token_for(:carla)
+    get "/api/v1/admin/reviews", headers: auth_headers(users(:carla))
     assert_response :forbidden
 
-    get "/api/v1/admin/reviews", headers: token_for(:marli)
+    get "/api/v1/admin/reviews", headers: auth_headers(users(:marli))
     assert_response :forbidden
 
-    get "/api/v1/admin/reviews", headers: token_for(:admin)
+    get "/api/v1/admin/reviews", headers: auth_headers(users(:admin))
     assert_response :success
   end
 
@@ -69,7 +69,7 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
 
     post "/api/v1/admin/reviews/#{review.id}/remove",
       params: { note: "nao gostei" },
-      headers: token_for(:marli)
+      headers: auth_headers(users(:marli))
 
     assert_response :forbidden
     assert_equal "published", review.reload.moderation_status
@@ -90,29 +90,23 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
 
     patch "/api/v1/reviews/#{review.id}",
       params: { review: { rating: 1, comment: "Editado por outra pessoa" } },
-      headers: token_for(:diego)
+      headers: auth_headers(users(:diego))
 
     assert_response :forbidden
     assert_equal 5, review.reload.rating
   end
 
   test "ninguem apaga o favorito de outra pessoa" do
-    delete "/api/v1/favorites/#{favorites(:carla_segue_marli).id}", headers: token_for(:diego)
+    delete "/api/v1/favorites/#{favorites(:carla_segue_marli).id}", headers: auth_headers(users(:diego))
 
     assert_response :not_found
     assert Favorite.exists?(favorites(:carla_segue_marli).id)
   end
 
   test "ninguem apaga o token de push de outro aparelho" do
-    delete "/api/v1/device_tokens/#{device_tokens(:carla_iphone).id}", headers: token_for(:diego)
+    delete "/api/v1/device_tokens/#{device_tokens(:carla_iphone).id}", headers: auth_headers(users(:diego))
 
     assert_response :not_found
     assert DeviceToken.exists?(device_tokens(:carla_iphone).id)
   end
-
-  private
-    def token_for(fixture)
-      token, = Warden::JWTAuth::UserEncoder.new.call(users(fixture), :user, nil)
-      { "Authorization" => "Bearer #{token}" }
-    end
 end

@@ -18,18 +18,18 @@ class WeeklyMenu < ApplicationRecord
   scope :active, -> { where(active: true).not_deleted }
   scope :for_seller, ->(seller_profile_id) { where(seller_profile_id: seller_profile_id) }
   scope :available_now, -> {
-    where('available_from <= ? AND available_until >= ?', Time.current, Time.current)
+    where("available_from <= ? AND available_until >= ?", Time.current, Time.current)
       .where(active: true)
       .not_deleted
   }
   scope :upcoming, -> {
-    where('available_from > ?', Time.current)
+    where("available_from > ?", Time.current)
       .where(active: true)
       .not_deleted
       .order(available_from: :asc)
   }
   scope :past, -> {
-    where('available_until < ?', Time.current)
+    where("available_until < ?", Time.current)
       .not_deleted
       .order(available_from: :desc)
   }
@@ -110,7 +110,7 @@ class WeeklyMenu < ApplicationRecord
       message += "📦 #{menu_dish.remaining_quantity} disponíveis\n"
 
       if dish.dietary_tags.any?
-        tags = dish.dietary_tags.map { |tag| "##{tag}" }.join(' ')
+        tags = dish.dietary_tags.map { |tag| "##{tag}" }.join(" ")
         message += "#{tags}\n"
       end
 

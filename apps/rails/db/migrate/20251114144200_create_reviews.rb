@@ -42,7 +42,7 @@ class CreateReviews < ActiveRecord::Migration[8.1]
     add_index :reviews, :encounter_date
 
     # Unique constraint: one review per user per seller per day
-    add_index :reviews, [:user_id, :seller_profile_id, :encounter_date],
+    add_index :reviews, [ :user_id, :seller_profile_id, :encounter_date ],
               unique: true,
               name: 'index_reviews_on_user_seller_date'
 

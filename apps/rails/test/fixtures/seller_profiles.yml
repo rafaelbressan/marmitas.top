@@ -60,3 +60,11 @@ ana_verdinha:
   arrived_at: <%= 2.hours.ago.to_fs(:db) %>
   leaving_at: <%= 4.hours.from_now.to_fs(:db) %>
   last_active_at: <%= 2.hours.ago.to_fs(:db) %>
+
+# Primeiro dia de uso: sem prato, sem cardapio, sem avaliacao e sem ponto de
+# venda. E o estado que o painel de "Minha loja" tem que desenhar sem quebrar.
+bia_novata:
+  user: bia
+  business_name: Marmitas da Bia
+  city: Rio de Janeiro
+  state: RJ

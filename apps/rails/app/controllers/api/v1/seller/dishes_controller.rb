@@ -6,14 +6,14 @@ module Api
         # (500) para quem nao tem perfil. Agora e 403, e roda antes do
         # `set_dish` justamente por isso.
         before_action :require_seller_profile
-        before_action :set_dish, only: [:show, :update, :destroy]
+        before_action :set_dish, only: [ :show, :update, :destroy ]
 
         # GET /api/v1/seller/dishes
         def index
           authorize [ :seller, Dish ], :index?
 
           @dishes = current_user.seller_profile.dishes.order(created_at: :desc)
-          @dishes = @dishes.active if params[:active_only] == 'true'
+          @dishes = @dishes.active if params[:active_only] == "true"
 
           render json: {
             dishes: @dishes.map { |dish| dish_response(dish) }
@@ -61,7 +61,7 @@ module Api
           if @dish.save
             attach_photos if params[:dish][:photos].present?
             render json: {
-              message: 'Dish created successfully',
+              message: "Dish created successfully",
               dish: dish_response(@dish)
             }, status: :created
           else
@@ -76,7 +76,7 @@ module Api
           if @dish.update(dish_params)
             attach_photos if params[:dish][:photos].present?
             render json: {
-              message: 'Dish updated successfully',
+              message: "Dish updated successfully",
               dish: dish_response(@dish)
             }, status: :ok
           else
@@ -91,12 +91,12 @@ module Api
           # Check if dish is in any active menus
           if @dish.weekly_menus.active.available_now.any?
             return render json: {
-              error: 'Cannot delete dish that is in active menus'
+              error: "Cannot delete dish that is in active menus"
             }, status: :unprocessable_entity
           end
 
           @dish.destroy
-          render json: { message: 'Dish deleted successfully' }, status: :ok
+          render json: { message: "Dish deleted successfully" }, status: :ok
         end
 
         private
@@ -104,7 +104,7 @@ module Api
         def set_dish
           @dish = current_user.seller_profile.dishes.find(params[:id])
         rescue ActiveRecord::RecordNotFound
-          render json: { error: 'Dish not found' }, status: :not_found
+          render json: { error: "Dish not found" }, status: :not_found
         end
 
         def dish_params
@@ -119,7 +119,7 @@ module Api
 
         def attach_photos
           photos = params[:dish][:photos]
-          photos = [photos] unless photos.is_a?(Array)
+          photos = [ photos ] unless photos.is_a?(Array)
           photos.each do |photo|
             @dish.photos.attach(photo) if photo.present?
           end

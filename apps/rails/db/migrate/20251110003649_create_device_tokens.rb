@@ -12,7 +12,7 @@ class CreateDeviceTokens < ActiveRecord::Migration[8.1]
     end
 
     # Ensure unique tokens per user and platform
-    add_index :device_tokens, [:user_id, :token, :platform], unique: true, name: 'index_device_tokens_uniqueness'
+    add_index :device_tokens, [ :user_id, :token, :platform ], unique: true, name: 'index_device_tokens_uniqueness'
     add_index :device_tokens, :token
 
     # Add notification preferences to users

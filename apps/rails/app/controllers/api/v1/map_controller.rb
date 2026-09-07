@@ -1,7 +1,7 @@
 module Api
   module V1
     class MapController < BaseController
-      skip_before_action :authenticate_user!, only: [:sellers]
+      skip_before_action :authenticate_user!, only: [ :sellers ]
 
       # GET /api/v1/map/sellers
       # Returns active sellers with their locations in a map-friendly format
@@ -9,7 +9,7 @@ module Api
         authorize :map, :sellers?
 
         unless params[:latitude] && params[:longitude]
-          return render json: { error: 'Latitude and longitude required' }, status: :bad_request
+          return render json: { error: "Latitude and longitude required" }, status: :bad_request
         end
 
         lat = params[:latitude].to_f
@@ -25,9 +25,9 @@ module Api
         # Convert to GeoJSON-compatible format
         features = @sellers.map do |seller|
           {
-            type: 'Feature',
+            type: "Feature",
             geometry: {
-              type: 'Point',
+              type: "Point",
               coordinates: [
                 seller.current_location.longitude.to_f,
                 seller.current_location.latitude.to_f
@@ -56,7 +56,7 @@ module Api
         end
 
         render json: {
-          type: 'FeatureCollection',
+          type: "FeatureCollection",
           features: features,
           metadata: {
             total_sellers: features.count,
@@ -76,7 +76,7 @@ module Api
 
         unless params[:ne_lat] && params[:ne_lng] && params[:sw_lat] && params[:sw_lng]
           return render json: {
-            error: 'Bounding box required (ne_lat, ne_lng, sw_lat, sw_lng)'
+            error: "Bounding box required (ne_lat, ne_lng, sw_lat, sw_lng)"
           }, status: :bad_request
         end
 
@@ -99,9 +99,9 @@ module Api
 
         features = @sellers.map do |seller|
           {
-            type: 'Feature',
+            type: "Feature",
             geometry: {
-              type: 'Point',
+              type: "Point",
               coordinates: [
                 seller.current_location.longitude.to_f,
                 seller.current_location.latitude.to_f
@@ -123,7 +123,7 @@ module Api
         end
 
         render json: {
-          type: 'FeatureCollection',
+          type: "FeatureCollection",
           features: features,
           metadata: {
             total_sellers: features.count,
