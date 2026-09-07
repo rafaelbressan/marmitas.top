@@ -44,3 +44,10 @@ ana:
   name: Ana Prado
   email: ana.vegana@marmitas.top
   phone: "11988220001"
+
+# Acabou de se cadastrar: tem perfil de marmiteiro, mas nada dentro dele.
+bia:
+  <<: *DEFAULTS
+  name: Bia Nogueira
+  email: bia.nogueira@marmitas.top
+  phone: "21988110003"
