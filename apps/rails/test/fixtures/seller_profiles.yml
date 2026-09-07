@@ -61,6 +61,14 @@ ana_verdinha:
   leaving_at: <%= 4.hours.from_now.to_fs(:db) %>
   last_active_at: <%= 2.hours.ago.to_fs(:db) %>
 
+# Primeiro dia de uso: sem prato, sem cardapio, sem avaliacao e sem ponto de
+# venda. E o estado que o painel de "Minha loja" tem que desenhar sem quebrar.
+bia_novata:
+  user: bia
+  business_name: Marmitas da Bia
+  city: Rio de Janeiro
+  state: RJ
+
 # Ambulante anunciando agora: mesmo turno dos outros (`currently_active`,
 # `arrived_at`, `leaving_at`, `current_location_id`), so que a posicao vem do
 # aparelho e e regravada na linha `circulando`.
@@ -69,8 +77,8 @@ neide_ambulante:
   user: neide
   business_name: Marmita da Neide
   bio: Carrinho de marmita que anda pelo Catete e Flamengo na hora do almoco.
-  phone: "21988110003"
-  whatsapp: "5521988110003"
+  phone: "21988110005"
+  whatsapp: "5521988110005"
   city: Rio de Janeiro
   state: RJ
   verified: true
@@ -88,8 +96,8 @@ tiao_vencido:
   user: tiao
   business_name: Quentinhas do Tiao
   bio: Quentinha na Praca da Bandeira, de segunda a sexta.
-  phone: "21988110004"
-  whatsapp: "5521988110004"
+  phone: "21988110006"
+  whatsapp: "5521988110006"
   city: Rio de Janeiro
   state: RJ
   verified: true

@@ -2,7 +2,7 @@ module Api
   module V1
     module Seller
       class WeeklyMenusController < BaseController
-        before_action :set_menu, only: [:show, :update, :destroy, :add_dish, :remove_dish, :duplicate, :whatsapp_text]
+        before_action :set_menu, only: [ :show, :update, :destroy, :add_dish, :remove_dish, :duplicate, :whatsapp_text ]
 
         # GET /api/v1/seller/weekly_menus
         def index
@@ -10,15 +10,15 @@ module Api
 
           # Filter by status
           @menus = case params[:status]
-                   when 'active'
+          when "active"
                      @menus.available_now
-                   when 'upcoming'
+          when "upcoming"
                      @menus.upcoming
-                   when 'past'
+          when "past"
                      @menus.past
-                   else
+          else
                      @menus
-                   end
+          end
 
           render json: {
             menus: @menus.map { |menu| menu_summary(menu) }
@@ -33,14 +33,14 @@ module Api
         # POST /api/v1/seller/weekly_menus
         def create
           unless current_user.seller_profile
-            return render json: { error: 'Seller profile required' }, status: :forbidden
+            return render json: { error: "Seller profile required" }, status: :forbidden
           end
 
           @menu = current_user.seller_profile.weekly_menus.build(menu_params)
 
           if @menu.save
             render json: {
-              message: 'Daily menu created successfully',
+              message: "Daily menu created successfully",
               menu: menu_detail(@menu)
             }, status: :created
           else
@@ -52,7 +52,7 @@ module Api
         def update
           if @menu.update(menu_params)
             render json: {
-              message: 'Daily menu updated successfully',
+              message: "Daily menu updated successfully",
               menu: menu_detail(@menu)
             }, status: :ok
           else
@@ -64,12 +64,12 @@ module Api
         def destroy
           if @menu.available?
             return render json: {
-              error: 'Cannot delete an active menu'
+              error: "Cannot delete an active menu"
             }, status: :unprocessable_entity
           end
 
           @menu.destroy
-          render json: { message: 'Daily menu deleted successfully' }, status: :ok
+          render json: { message: "Daily menu deleted successfully" }, status: :ok
         end
 
         # POST /api/v1/seller/weekly_menus/:id/add_dish
@@ -85,14 +85,14 @@ module Api
 
           if menu_dish.save
             render json: {
-              message: 'Dish added to menu successfully',
+              message: "Dish added to menu successfully",
               menu: menu_detail(@menu.reload)
             }, status: :ok
           else
             render json: { errors: menu_dish.errors.full_messages }, status: :unprocessable_entity
           end
         rescue ActiveRecord::RecordNotFound
-          render json: { error: 'Dish not found' }, status: :not_found
+          render json: { error: "Dish not found" }, status: :not_found
         end
 
         # DELETE /api/v1/seller/weekly_menus/:id/remove_dish/:dish_id
@@ -100,12 +100,12 @@ module Api
           menu_dish = @menu.weekly_menu_dishes.find_by(dish_id: params[:dish_id])
 
           unless menu_dish
-            return render json: { error: 'Dish not in menu' }, status: :not_found
+            return render json: { error: "Dish not in menu" }, status: :not_found
           end
 
           menu_dish.destroy
           render json: {
-            message: 'Dish removed from menu successfully',
+            message: "Dish removed from menu successfully",
             menu: menu_detail(@menu.reload)
           }, status: :ok
         end
@@ -122,7 +122,7 @@ module Api
             )
 
             render json: {
-              message: 'Menu duplicated successfully',
+              message: "Menu duplicated successfully",
               menu: menu_detail(new_menu)
             }, status: :created
           rescue => e
@@ -143,7 +143,7 @@ module Api
         def set_menu
           @menu = current_user.seller_profile.weekly_menus.find(params[:id])
         rescue ActiveRecord::RecordNotFound
-          render json: { error: 'Menu not found' }, status: :not_found
+          render json: { error: "Menu not found" }, status: :not_found
         end
 
         def menu_params

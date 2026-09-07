@@ -45,16 +45,23 @@ ana:
   email: ana.vegana@marmitas.top
   phone: "11988220001"
 
+# Acabou de se cadastrar: tem perfil de marmiteiro, mas nada dentro dele.
+bia:
+  <<: *DEFAULTS
+  name: Bia Nogueira
+  email: bia.nogueira@marmitas.top
+  phone: "21988110003"
+
 # Ambulante: anda pelo Catete com o carrinho e transmite a posicao.
 neide:
   <<: *DEFAULTS
   name: Neide Barros
   email: neide.ambulante@marmitas.top
-  phone: "21988110003"
+  phone: "21988110005"
 
 # Esqueceu de tocar "sai daqui" ontem: o turno venceu e o pino ficou no mapa.
 tiao:
   <<: *DEFAULTS
   name: Tiao Alves
   email: tiao.esquecido@marmitas.top
-  phone: "21988110004"
+  phone: "21988110006"

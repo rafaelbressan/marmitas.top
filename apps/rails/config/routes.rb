@@ -6,23 +6,23 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       # Authentication
-      post 'auth/register', to: 'auth#register'
-      post 'auth/login', to: 'auth#login'
-      delete 'auth/logout', to: 'auth#logout'
-      get 'auth/me', to: 'auth#me'
+      post "auth/register", to: "auth#register"
+      post "auth/login", to: "auth#login"
+      delete "auth/logout", to: "auth#logout"
+      get "auth/me", to: "auth#me"
 
       # Sellers (public browsing)
-      resources :sellers, only: [:index, :show] do
+      resources :sellers, only: [ :index, :show ] do
         collection do
           get :nearby
         end
         member do
-          get :menus, to: 'menus#seller_menus'
+          get :menus, to: "menus#seller_menus"
         end
       end
 
       # Menus (public browsing)
-      resources :menus, only: [:index, :show] do
+      resources :menus, only: [ :index, :show ] do
         collection do
           get :available_today
         end
@@ -30,28 +30,31 @@ Rails.application.routes.draw do
 
       # Seller management (authenticated sellers only)
       namespace :seller do
-        resource :profile, only: [:show, :create, :update, :destroy]
+        resource :profile, only: [ :show, :create, :update, :destroy ]
 
-        resources :dishes, only: [:index, :show, :create, :update, :destroy] do
+        # Resumo do dia da tela "Minha loja"
+        resource :dashboard, only: [ :show ]
+
+        resources :dishes, only: [ :index, :show, :create, :update, :destroy ] do
           collection do
             get :favorites_stats
           end
         end
 
-        resources :weekly_menus, only: [:index, :show, :create, :update, :destroy] do
+        resources :weekly_menus, only: [ :index, :show, :create, :update, :destroy ] do
           member do
             post :add_dish
-            delete 'remove_dish/:dish_id', to: 'weekly_menus#remove_dish', as: :remove_dish
+            delete "remove_dish/:dish_id", to: "weekly_menus#remove_dish", as: :remove_dish
             post :duplicate
             get :whatsapp_text
 
             # Baixa de quantidade: "vendi 3" (sold) ou "sobraram 5" / "acabou"
             # (remaining_quantity).
-            patch 'dishes/:dish_id/quantity', to: 'weekly_menu_dishes#update', as: :dish_quantity
+            patch "dishes/:dish_id/quantity", to: "weekly_menu_dishes#update", as: :dish_quantity
           end
         end
 
-        resources :selling_locations, only: [:index, :show, :create, :update, :destroy] do
+        resources :selling_locations, only: [ :index, :show, :create, :update, :destroy ] do
           member do
             post :arrive
             post :leave
@@ -60,11 +63,11 @@ Rails.application.routes.draw do
 
         # Posicao ao vivo do ambulante. O turno continua sendo aberto e fechado
         # por selling_locations#arrive / #leave.
-        resource :position, only: [:show, :update], controller: 'positions'
+        resource :position, only: [ :show, :update ], controller: "positions"
       end
 
       # Favorites
-      resources :favorites, only: [:index, :create, :destroy] do
+      resources :favorites, only: [ :index, :create, :destroy ] do
         collection do
           get :dishes
           get :sellers
@@ -74,25 +77,25 @@ Rails.application.routes.draw do
       end
 
       # Device Tokens (for push notifications)
-      resources :device_tokens, only: [:index, :create, :destroy] do
+      resources :device_tokens, only: [ :index, :create, :destroy ] do
         collection do
           post :deactivate_all
         end
       end
 
       # Notification Preferences
-      resource :notification_preferences, only: [:show, :update]
+      resource :notification_preferences, only: [ :show, :update ]
 
       # Map endpoints (GeoJSON-compatible)
-      get 'map/sellers', to: 'map#sellers'
-      get 'map/bounds', to: 'map#bounds'
+      get "map/sellers", to: "map#sellers"
+      get "map/bounds", to: "map#bounds"
 
       # Reviews
       resources :sellers, only: [] do
-        resources :reviews, only: [:index, :create]
+        resources :reviews, only: [ :index, :create ]
       end
 
-      resources :reviews, only: [:show, :update, :destroy] do
+      resources :reviews, only: [ :show, :update, :destroy ] do
         member do
           post :flag
           post :helpful
@@ -101,7 +104,7 @@ Rails.application.routes.draw do
 
       # Admin routes
       namespace :admin do
-        resources :reviews, only: [:index, :show] do
+        resources :reviews, only: [ :index, :show ] do
           member do
             post :approve
             post :remove
@@ -115,5 +118,5 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
   # Root path for API info
-  get "/" => proc { [200, {}, ['Marmitas.top API v1 - See /api/v1']] }
+  get "/" => proc { [ 200, {}, [ "Marmitas.top API v1 - See /api/v1" ] ] }
 end

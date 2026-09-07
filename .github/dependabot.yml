@@ -1,0 +1,21 @@
+# Precisa ficar em `.github/` na raiz do repositorio. Enquanto esteve em
+# `apps/rails/.github/` o Dependabot nunca leu este arquivo (BRES-101).
+version: 2
+updates:
+  - package-ecosystem: bundler
+    directory: "/apps/rails"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: npm
+    directory: "/apps/mobile"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10

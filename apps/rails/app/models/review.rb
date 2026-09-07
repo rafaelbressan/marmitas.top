@@ -3,7 +3,7 @@ class Review < ApplicationRecord
   belongs_to :user
   belongs_to :seller_profile, counter_cache: :reviews_count
   belongs_to :weekly_menu, optional: true
-  belongs_to :moderated_by, class_name: 'User', optional: true
+  belongs_to :moderated_by, class_name: "User", optional: true
 
   has_many :review_helpfuls, dependent: :destroy
 
@@ -14,7 +14,7 @@ class Review < ApplicationRecord
 
   # Unique constraint: one review per user per seller per day
   validates :user_id, uniqueness: {
-    scope: [:seller_profile_id, :encounter_date],
+    scope: [ :seller_profile_id, :encounter_date ],
     message: "Você já avaliou este marmiteiro hoje"
   }
 
@@ -24,15 +24,15 @@ class Review < ApplicationRecord
   validate :cannot_edit_under_moderation, on: :update
 
   # Scopes
-  scope :published, -> { where(moderation_status: 'published') }
+  scope :published, -> { where(moderation_status: "published") }
   scope :flagged_reviews, -> { where(flagged: true) }
-  scope :under_review, -> { where(moderation_status: 'under_review') }
-  scope :removed, -> { where(moderation_status: 'removed') }
-  scope :recent, -> { where('created_at > ?', 30.days.ago) }
+  scope :under_review, -> { where(moderation_status: "under_review") }
+  scope :removed, -> { where(moderation_status: "removed") }
+  scope :recent, -> { where("created_at > ?", 30.days.ago) }
   scope :medium, -> { where(created_at: 90.days.ago..30.days.ago) }
-  scope :old, -> { where('created_at < ?', 90.days.ago) }
+  scope :old, -> { where("created_at < ?", 90.days.ago) }
   scope :verified, -> { where(verified_encounter: true) }
-  scope :with_comments, -> { where.not(comment: [nil, '']) }
+  scope :with_comments, -> { where.not(comment: [ nil, "" ]) }
   scope :by_rating, ->(rating) { where(rating: rating) }
 
   # Callbacks
@@ -45,7 +45,7 @@ class Review < ApplicationRecord
 
   # Class methods
   def self.rating_distribution(seller_profile_id)
-    where(seller_profile_id: seller_profile_id, moderation_status: 'published')
+    where(seller_profile_id: seller_profile_id, moderation_status: "published")
       .group(:rating)
       .count
   end
@@ -77,8 +77,8 @@ class Review < ApplicationRecord
   # Check if review can be edited
   def editable_by?(current_user)
     return false unless current_user.id == user_id
-    return false if moderation_status == 'under_review'
-    return false if moderation_status == 'removed'
+    return false if moderation_status == "under_review"
+    return false if moderation_status == "removed"
     return false unless within_edit_window?
 
     true
@@ -93,7 +93,7 @@ class Review < ApplicationRecord
   def flaggable_by?(current_user)
     return false if current_user.id == user_id # Can't flag own review
     return false if flagged? # Already flagged
-    return false unless moderation_status == 'published'
+    return false unless moderation_status == "published"
 
     true
   end
@@ -105,7 +105,7 @@ class Review < ApplicationRecord
     update!(
       flagged: true,
       flag_reason: reason,
-      moderation_status: 'under_review'
+      moderation_status: "under_review"
     )
 
     # Trigger moderation alert job
@@ -117,7 +117,7 @@ class Review < ApplicationRecord
   # Admin moderation actions
   def approve!(admin, note = nil)
     update!(
-      moderation_status: 'published',
+      moderation_status: "published",
       flagged: false,
       moderation_note: note,
       moderated_at: Time.current,
@@ -129,7 +129,7 @@ class Review < ApplicationRecord
     raise ArgumentError, "Note is required when removing review" if note.blank?
 
     update!(
-      moderation_status: 'removed',
+      moderation_status: "removed",
       moderation_note: note,
       moderated_at: Time.current,
       moderated_by: admin
@@ -141,7 +141,7 @@ class Review < ApplicationRecord
     if weekly_menu&.deleted_at?
       "#{dish_name} (não disponível)"
     else
-      dish_name || weekly_menu&.dishes&.first&.[]('name') || 'Menu da semana'
+      dish_name || weekly_menu&.dishes&.first&.[]("name") || "Menu da semana"
     end
   end
 
@@ -164,7 +164,7 @@ class Review < ApplicationRecord
   end
 
   def cannot_edit_under_moderation
-    if persisted? && moderation_status == 'under_review' && (rating_changed? || comment_changed?)
+    if persisted? && moderation_status == "under_review" && (rating_changed? || comment_changed?)
       errors.add(:base, "Esta avaliação está sob moderação e não pode ser editada")
     end
   end
@@ -177,7 +177,7 @@ class Review < ApplicationRecord
     if weekly_menu
       # Capture dish names from the weekly menu's dishes array
       dishes = weekly_menu.dishes || []
-      self.dish_name ||= dishes.map { |d| d['name'] }.join(', ') if dishes.any?
+      self.dish_name ||= dishes.map { |d| d["name"] }.join(", ") if dishes.any?
     end
   end
 
@@ -189,8 +189,8 @@ class Review < ApplicationRecord
     # Calculate distance between user and seller
     seller_location = seller_profile.current_location
     distance = Geocoder::Calculations.distance_between(
-      [encounter_latitude, encounter_longitude],
-      [seller_location.latitude, seller_location.longitude],
+      [ encounter_latitude, encounter_longitude ],
+      [ seller_location.latitude, seller_location.longitude ],
       units: :km
     )
 
@@ -200,18 +200,18 @@ class Review < ApplicationRecord
 
   def detect_suspicious_patterns
     # Check for spam patterns
-    recent_reviews = user.reviews.where('created_at > ?', 7.days.ago).where.not(id: id)
+    recent_reviews = user.reviews.where("created_at > ?", 7.days.ago).where.not(id: id)
 
     # Pattern 1: Too many one-star reviews
     one_star_count = recent_reviews.where(rating: 1).count
     if rating == 1 && one_star_count >= 2
-      self.moderation_status = 'under_review'
+      self.moderation_status = "under_review"
       self.flag_reason = "Auto-flagged: Padrão suspeito de avaliações negativas"
     end
 
     # Pattern 2: Too many reviews in short time
     if recent_reviews.count >= 9 # 10+ including current
-      self.moderation_status = 'under_review'
+      self.moderation_status = "under_review"
       self.flag_reason = "Auto-flagged: Muitas avaliações em curto período"
     end
   end

@@ -13,7 +13,7 @@ class WeeklyMenuDish < ApplicationRecord
   before_validation :set_remaining_quantity, on: :create
 
   # Scopes
-  scope :available, -> { where('remaining_quantity > 0') }
+  scope :available, -> { where("remaining_quantity > 0") }
   scope :ordered, -> { order(:display_order, :created_at) }
 
   # Get effective price (override or base price)

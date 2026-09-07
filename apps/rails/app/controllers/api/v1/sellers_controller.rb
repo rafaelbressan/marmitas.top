@@ -1,7 +1,7 @@
 module Api
   module V1
     class SellersController < BaseController
-      skip_before_action :authenticate_user!, only: [:index, :show, :nearby]
+      skip_before_action :authenticate_user!, only: [ :index, :show, :nearby ]
 
       # GET /api/v1/sellers
       def index
@@ -9,12 +9,15 @@ module Api
         @sellers = apply_filters(@sellers)
 
         # Prioritize favorited sellers if user is authenticated
-        if current_user.present?
-          favorited_ids = current_user.favorited_sellers.pluck(:id)
-          @sellers = @sellers.order(
-            Arel.sql("CASE WHEN seller_profiles.id IN (#{favorited_ids.any? ? favorited_ids.join(',') : '0'}) THEN 0 ELSE 1 END"),
-            created_at: :desc
+        favorited_ids = current_user.present? ? current_user.favorited_sellers.pluck(:id) : []
+        if favorited_ids.any?
+          # Bind the ids instead of interpolating them: `Arel.sql` disables the
+          # quoting Active Record would otherwise apply, so the list has to be
+          # sanitized before it reaches the ORDER BY (brakeman SQL injection).
+          favorites_first = SellerProfile.sanitize_sql_array(
+            [ "CASE WHEN seller_profiles.id IN (?) THEN 0 ELSE 1 END", favorited_ids ]
           )
+          @sellers = @sellers.order(Arel.sql(favorites_first), created_at: :desc)
         end
 
         @sellers = @sellers.page(params[:page]).per(params[:per_page] || 20)
@@ -30,13 +33,13 @@ module Api
         @seller = SellerProfile.find(params[:id])
         render json: { seller: seller_detail(@seller) }, status: :ok
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Seller not found' }, status: :not_found
+        render json: { error: "Seller not found" }, status: :not_found
       end
 
       # GET /api/v1/sellers/nearby
       def nearby
         unless params[:latitude] && params[:longitude]
-          return render json: { error: 'Latitude and longitude required' }, status: :bad_request
+          return render json: { error: "Latitude and longitude required" }, status: :bad_request
         end
 
         lat = params[:latitude].to_f
@@ -75,8 +78,8 @@ module Api
 
       def apply_filters(scope)
         scope = scope.where(city: params[:city]) if params[:city].present?
-        scope = scope.where('average_rating >= ?', params[:min_rating]) if params[:min_rating].present?
-        scope = scope.broadcasting if params[:active_only] == 'true'
+        scope = scope.where("average_rating >= ?", params[:min_rating]) if params[:min_rating].present?
+        scope = scope.broadcasting if params[:active_only] == "true"
         scope
       end
 

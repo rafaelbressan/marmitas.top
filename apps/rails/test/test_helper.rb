@@ -23,13 +23,17 @@ module ActiveSupport
   end
 end
 
-module ActionDispatch
-  class IntegrationTest
-    # Token do proprio devise-jwt, com a mesma chave e o mesmo encoder que o
-    # POST /auth/login usa. Evita passar por login em todo teste de rota.
-    def auth_headers(user)
-      token = Warden::JWTAuth::UserEncoder.new.call(user, :user, nil).first
-      { "Authorization" => "Bearer #{token}" }
-    end
+class ActionDispatch::IntegrationTest
+  # Mesmo token que `POST /api/v1/auth/login` devolve: o encoder do devise-jwt,
+  # com a chave de assinatura da aplicacao. Sem isso todo teste de endpoint
+  # autenticado teria que fazer login por HTTP antes da chamada que interessa.
+  def auth_headers(user)
+    token = Warden::JWTAuth::UserEncoder.new.call(user, :user, nil).first
+
+    { "Authorization" => "Bearer #{token}" }
+  end
+
+  def json_response
+    JSON.parse(response.body)
   end
 end

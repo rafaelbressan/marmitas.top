@@ -1,7 +1,7 @@
 class PushNotificationService
   # FCM (Firebase Cloud Messaging) configuration
   # Set FCM_SERVER_KEY in environment variables
-  FCM_URL = 'https://fcm.googleapis.com/fcm/send'
+  FCM_URL = "https://fcm.googleapis.com/fcm/send"
 
   def self.notify_seller_arrival(seller_profile)
     new.notify_seller_arrival(seller_profile)
@@ -20,7 +20,7 @@ class PushNotificationService
 
     # Get all users who have favorited this seller
     users_to_notify = User.joins(:favorites)
-                          .where(favorites: { favoritable_type: 'SellerProfile', favoritable_id: seller_profile.id })
+                          .where(favorites: { favoritable_type: "SellerProfile", favoritable_id: seller_profile.id })
                           .where("notification_preferences->>'seller_arrivals' = 'true'")
                           .distinct
 
@@ -28,15 +28,15 @@ class PushNotificationService
       title: "#{seller_profile.business_name} está por perto!",
       body: "#{seller_profile.business_name} chegou em #{seller_profile.current_location.name}",
       data: {
-        type: 'seller_arrival',
+        type: "seller_arrival",
         seller_id: seller_profile.id,
         location_id: seller_profile.current_location_id,
         location_name: seller_profile.current_location.name,
         arrived_at: seller_profile.arrived_at.iso8601,
         leaving_at: seller_profile.leaving_at&.iso8601
       },
-      click_action: 'FLUTTER_NOTIFICATION_CLICK',
-      sound: 'default'
+      click_action: "FLUTTER_NOTIFICATION_CLICK",
+      sound: "default"
     }
 
     users_to_notify.each do |user|
@@ -51,7 +51,7 @@ class PushNotificationService
 
     # Get all users who have favorited this seller
     users_to_notify = User.joins(:favorites)
-                          .where(favorites: { favoritable_type: 'SellerProfile', favoritable_id: seller_profile.id })
+                          .where(favorites: { favoritable_type: "SellerProfile", favoritable_id: seller_profile.id })
                           .where("notification_preferences->>'new_menus' = 'true'")
                           .distinct
 
@@ -59,14 +59,14 @@ class PushNotificationService
       title: "Novo cardápio de #{seller_profile.business_name}!",
       body: weekly_menu.title || "Confira o novo cardápio disponível",
       data: {
-        type: 'new_menu',
+        type: "new_menu",
         seller_id: seller_profile.id,
         menu_id: weekly_menu.id,
         available_from: weekly_menu.available_from.iso8601,
         available_until: weekly_menu.available_until.iso8601
       },
-      click_action: 'FLUTTER_NOTIFICATION_CLICK',
-      sound: 'default'
+      click_action: "FLUTTER_NOTIFICATION_CLICK",
+      sound: "default"
     }
 
     users_to_notify.each do |user|
@@ -96,11 +96,11 @@ class PushNotificationService
       notification: {
         title: notification_data[:title],
         body: notification_data[:body],
-        sound: notification_data[:sound] || 'default',
+        sound: notification_data[:sound] || "default",
         click_action: notification_data[:click_action]
       },
       data: notification_data[:data] || {},
-      priority: 'high'
+      priority: "high"
     }
 
     # In development/test, just log the notification
@@ -118,7 +118,7 @@ class PushNotificationService
     begin
       response = send_fcm_request(payload)
 
-      if response['success'] == 1
+      if response["success"] == 1
         device_token.touch_last_used!
         true
       else
@@ -138,8 +138,8 @@ class PushNotificationService
     http.use_ssl = true
 
     request = Net::HTTP::Post.new(uri.path, {
-      'Content-Type' => 'application/json',
-      'Authorization' => "key=#{fcm_server_key}"
+      "Content-Type" => "application/json",
+      "Authorization" => "key=#{fcm_server_key}"
     })
     request.body = payload.to_json
 
@@ -148,10 +148,10 @@ class PushNotificationService
   end
 
   def handle_fcm_error(device_token, response)
-    error = response['results']&.first&.dig('error')
+    error = response["results"]&.first&.dig("error")
 
     case error
-    when 'NotRegistered', 'InvalidRegistration'
+    when "NotRegistered", "InvalidRegistration"
       # Token is no longer valid, deactivate it
       device_token.deactivate!
       Rails.logger.warn "Deactivated invalid device token: #{device_token.id}"
@@ -165,6 +165,6 @@ class PushNotificationService
   end
 
   def fcm_server_key
-    ENV['FCM_SERVER_KEY']
+    ENV["FCM_SERVER_KEY"]
   end
 end

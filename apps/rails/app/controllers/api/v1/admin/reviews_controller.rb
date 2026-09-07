@@ -1,7 +1,7 @@
 class Api::V1::Admin::ReviewsController < Api::V1::BaseController
   before_action :authenticate_user!
   before_action :require_admin!
-  before_action :set_review, only: [:show, :approve, :remove]
+  before_action :set_review, only: [ :show, :approve, :remove ]
 
   # GET /api/v1/admin/reviews
   def index
@@ -9,14 +9,14 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
     # Filter by moderation status
     case params[:status]
-    when 'flagged'
+    when "flagged"
       @reviews = @reviews.flagged_reviews
-    when 'under_review'
+    when "under_review"
       @reviews = @reviews.under_review
-    when 'removed'
+    when "removed"
       @reviews = @reviews.removed
     else
-      @reviews = @reviews.where(moderation_status: ['under_review', 'removed'])
+      @reviews = @reviews.where(moderation_status: [ "under_review", "removed" ])
                          .or(Review.where(flagged: true))
     end
 
@@ -40,8 +40,8 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
     user_reviews = @review.user.reviews.order(created_at: :desc).limit(10)
 
     # Detect patterns
-    recent_one_star = @review.user.reviews.where('created_at > ?', 7.days.ago).where(rating: 1).count
-    recent_review_count = @review.user.reviews.where('created_at > ?', 7.days.ago).count
+    recent_one_star = @review.user.reviews.where("created_at > ?", 7.days.ago).where(rating: 1).count
+    recent_review_count = @review.user.reviews.where("created_at > ?", 7.days.ago).count
 
     patterns = []
     patterns << "Padrão suspeito: #{recent_one_star} avaliações 1-estrela nos últimos 7 dias" if recent_one_star >= 3
@@ -67,7 +67,7 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
     @review.approve!(current_user, note)
 
     render json: {
-      message: 'Avaliação aprovada com sucesso',
+      message: "Avaliação aprovada com sucesso",
       review: admin_review_response(@review)
     }
   end
@@ -77,13 +77,13 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
     note = params[:note].to_s.strip
 
     if note.blank?
-      return render json: { error: 'Nota é obrigatória ao remover avaliação' }, status: :unprocessable_entity
+      return render json: { error: "Nota é obrigatória ao remover avaliação" }, status: :unprocessable_entity
     end
 
     @review.remove!(current_user, note)
 
     render json: {
-      message: 'Avaliação removida com sucesso',
+      message: "Avaliação removida com sucesso",
       review: admin_review_response(@review)
     }
   end
@@ -96,7 +96,7 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   def require_admin!
     unless current_user&.admin?
-      render json: { error: 'Acesso não autorizado' }, status: :forbidden
+      render json: { error: "Acesso não autorizado" }, status: :forbidden
     end
   end
 
@@ -105,7 +105,7 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
       flagged_count: Review.flagged_reviews.count,
       under_review_count: Review.under_review.count,
       removed_count: Review.removed.count,
-      total_pending: Review.where(moderation_status: ['under_review']).or(Review.where(flagged: true)).count
+      total_pending: Review.where(moderation_status: [ "under_review" ]).or(Review.where(flagged: true)).count
     }
   end
 

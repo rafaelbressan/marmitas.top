@@ -9,9 +9,9 @@ class NotifyFollowersJob < ApplicationJob
     return unless seller_profile
 
     case notification_type
-    when 'arrival'
+    when "arrival"
       PushNotificationService.notify_seller_arrival(seller_profile)
-    when 'departure'
+    when "departure"
       # Could notify about departure too if needed
       Rails.logger.info "Seller #{seller_profile.business_name} departed"
     else
