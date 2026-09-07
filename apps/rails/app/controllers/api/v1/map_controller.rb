@@ -22,6 +22,10 @@ module Api
                                  .includes(:user, :current_location)
                                  .limit(100)
 
+        # A BRES-113 decide o que um visitante sem token pode ver. Ate la a
+        # posicao ao vivo de um ambulante nao sai em resposta nao autenticada.
+        @sellers = @sellers.where(selling_locations: { kind: "ponto" }) if current_user.nil?
+
         # Convert to GeoJSON-compatible format
         features = @sellers.map do |seller|
           {
@@ -50,7 +54,11 @@ module Api
                 address: seller.current_location.address
               },
               arrived_at: seller.arrived_at,
-              leaving_at: seller.leaving_at
+              leaving_at: seller.leaving_at,
+              # 'ponto' = pino parado; 'circulando' = ambulante. Sem a idade da
+              # posicao o mapa promete uma precisao que nao tem.
+              kind: seller.current_location.kind,
+              position_updated_at: seller.current_location.position_updated_at
             }
           }
         end
@@ -87,8 +95,8 @@ module Api
 
         # Find sellers within the bounding box
         @sellers = SellerProfile.verified
+                                 .broadcasting
                                  .joins(:current_location)
-                                 .where(currently_active: true)
                                  .where(
                                    'selling_locations.latitude BETWEEN ? AND ? AND
                                     selling_locations.longitude BETWEEN ? AND ?',
@@ -117,7 +125,9 @@ module Api
               location: {
                 name: seller.current_location.name,
                 address: seller.current_location.address
-              }
+              },
+              kind: seller.current_location.kind,
+              position_updated_at: seller.current_location.position_updated_at
             }
           }
         end

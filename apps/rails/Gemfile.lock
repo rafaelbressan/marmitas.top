@@ -429,7 +429,7 @@ DEPENDENCIES
   dotenv-rails
   geocoder (~> 1.8)
   image_processing (~> 1.2)
-  json (~> 2.16)
+  json (< 3.0)
   jsonapi-serializer (~> 2.2)
   kamal
   kaminari (~> 1.2)

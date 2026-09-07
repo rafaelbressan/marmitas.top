@@ -4,9 +4,10 @@ require "test_helper"
 # `ActiveSupport::JSON.decode` ainda passa `quirks_mode: true` — com ele no
 # lock, toda leitura de coluna `jsonb` estoura com ArgumentError e o endpoint
 # responde 500. Os quatro gates do CI ficaram verdes assim mesmo, porque nenhum
-# teste lia uma dessas colunas.
+# teste lia uma dessas colunas — foi por isso que o problema chegou a `master`.
 #
-# Se o pin do `json` cair num `bundle update`, e aqui que a build para.
+# O pino (`gem "json", "< 3.0"`) chegou pela BRES-128; o que faltava era o
+# teste que o segura. Se ele cair num `bundle update`, e aqui que a build para.
 class JsonbColumnsTest < ActiveSupport::TestCase
   test "dietary_tags de um prato le como array" do
     prato = dishes(:frango_grelhado)

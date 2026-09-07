@@ -47,6 +47,10 @@ Rails.application.routes.draw do
             delete "remove_dish/:dish_id", to: "weekly_menus#remove_dish", as: :remove_dish
             post :duplicate
             get :whatsapp_text
+
+            # Baixa de quantidade: "vendi 3" (sold) ou "sobraram 5" / "acabou"
+            # (remaining_quantity).
+            patch "dishes/:dish_id/quantity", to: "weekly_menu_dishes#update", as: :dish_quantity
           end
         end
 
@@ -56,6 +60,10 @@ Rails.application.routes.draw do
             post :leave
           end
         end
+
+        # Posicao ao vivo do ambulante. O turno continua sendo aberto e fechado
+        # por selling_locations#arrive / #leave.
+        resource :position, only: [ :show, :update ], controller: "positions"
       end
 
       # Favorites
