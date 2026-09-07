@@ -1,4 +1,6 @@
 class Review < ApplicationRecord
+  include Discard::Model
+
   # Associations
   belongs_to :user
   belongs_to :seller_profile, counter_cache: :reviews_count
@@ -24,7 +26,7 @@ class Review < ApplicationRecord
   validate :cannot_edit_under_moderation, on: :update
 
   # Scopes
-  scope :published, -> { where(moderation_status: 'published') }
+  scope :published, -> { kept.where(moderation_status: 'published') }
   scope :flagged_reviews, -> { where(flagged: true) }
   scope :under_review, -> { where(moderation_status: 'under_review') }
   scope :removed, -> { where(moderation_status: 'removed') }
@@ -45,7 +47,7 @@ class Review < ApplicationRecord
 
   # Class methods
   def self.rating_distribution(seller_profile_id)
-    where(seller_profile_id: seller_profile_id, moderation_status: 'published')
+    kept.where(seller_profile_id: seller_profile_id, moderation_status: 'published')
       .group(:rating)
       .count
   end
@@ -138,7 +140,7 @@ class Review < ApplicationRecord
 
   # Display dish name (handles deleted menus)
   def display_dish_name
-    if weekly_menu&.deleted_at?
+    if weekly_menu&.discarded?
       "#{dish_name} (não disponível)"
     else
       dish_name || weekly_menu&.dishes&.first&.[]('name') || 'Menu da semana'

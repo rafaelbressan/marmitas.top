@@ -1,4 +1,6 @@
 class WeeklyMenuDish < ApplicationRecord
+  include Discard::Model
+
   # Associations
   belongs_to :weekly_menu
   belongs_to :dish
@@ -6,15 +8,22 @@ class WeeklyMenuDish < ApplicationRecord
   # Validations
   validates :available_quantity, presence: true, numericality: { greater_than: 0 }
   validates :remaining_quantity, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :dish_id, uniqueness: { scope: :weekly_menu_id, message: "already added to this menu" }
+  # So conta a linha viva: o mesmo prato pode ter sido tirado e recolocado no
+  # cardapio, e a passagem anterior continua no banco. O indice unico parcial
+  # (`WHERE discarded_at IS NULL`) diz a mesma coisa no banco.
+  validates :dish_id, uniqueness: {
+    scope: :weekly_menu_id,
+    conditions: -> { kept },
+    message: "already added to this menu"
+  }
   validate :remaining_not_greater_than_available
 
   # Callbacks
   before_validation :set_remaining_quantity, on: :create
 
   # Scopes
-  scope :available, -> { where('remaining_quantity > 0') }
-  scope :ordered, -> { order(:display_order, :created_at) }
+  scope :available, -> { kept.where('remaining_quantity > 0') }
+  scope :ordered, -> { kept.order(:display_order, :created_at) }
 
   # Get effective price (override or base price)
   def effective_price

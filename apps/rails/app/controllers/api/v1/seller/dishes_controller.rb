@@ -12,7 +12,7 @@ module Api
         def index
           authorize [ :seller, Dish ], :index?
 
-          @dishes = current_user.seller_profile.dishes.order(created_at: :desc)
+          @dishes = current_user.seller_profile.dishes.kept.order(created_at: :desc)
           @dishes = @dishes.active if params[:active_only] == 'true'
 
           render json: {
@@ -24,11 +24,11 @@ module Api
         def favorites_stats
           authorize [ :seller, Dish ], :favorites_stats?
 
-          @dishes = current_user.seller_profile.dishes
+          @dishes = current_user.seller_profile.dishes.kept
                                 .order(favorites_count: :desc)
                                 .limit(params[:limit] || 10)
 
-          total_favorites = current_user.seller_profile.dishes.sum(:favorites_count)
+          total_favorites = current_user.seller_profile.dishes.kept.sum(:favorites_count)
 
           render json: {
             total_favorites: total_favorites,
@@ -88,21 +88,23 @@ module Api
         def destroy
           authorize [ :seller, @dish ], :destroy?
 
-          # Check if dish is in any active menus
-          if @dish.weekly_menus.active.available_now.any?
+          # Cardapio no ar segura o prato. So conta a linha viva: prato ja
+          # tirado do cardapio nao fica preso por causa da linha descartada,
+          # que continua no banco como registro do dia.
+          if @dish.weekly_menu_dishes.kept.joins(:weekly_menu).merge(WeeklyMenu.available_now).exists?
             return render json: {
               error: 'Cannot delete dish that is in active menus'
             }, status: :unprocessable_entity
           end
 
-          @dish.destroy
+          @dish.discard
           render json: { message: 'Dish deleted successfully' }, status: :ok
         end
 
         private
 
         def set_dish
-          @dish = current_user.seller_profile.dishes.find(params[:id])
+          @dish = current_user.seller_profile.dishes.kept.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: 'Dish not found' }, status: :not_found
         end

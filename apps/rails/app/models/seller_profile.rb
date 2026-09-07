@@ -1,4 +1,6 @@
 class SellerProfile < ApplicationRecord
+  include Discard::Model
+
   # Broadcast duration constants (configurable business logic)
   DEFAULT_BROADCAST_DURATION = 12.hours
   MAX_BROADCAST_DURATION = 96.hours
@@ -23,6 +25,20 @@ class SellerProfile < ApplicationRecord
   validates :business_name, presence: true
   validates :user_id, uniqueness: true
   validate :leaving_at_within_max_duration, if: -> { leaving_at.present? && arrived_at.present? }
+
+  # Cascata: sair do app leva junto o que e do marmiteiro. Nada e destruido —
+  # as linhas continuam no banco, so param de aparecer.
+  #
+  # `weekly_menu_dishes` NAO entra na cascata de prato: e o registro de quanto
+  # saiu naquele dia, e o dia aconteceu.
+  #
+  # A cascata usa `update_all` com o carimbo exato do perfil, e nao
+  # `find_each(&:discard)`, para que `undiscard` saiba distinguir o que ela
+  # descartou do que ja estava descartado antes.
+  OWNED_ASSOCIATIONS = %i[dishes weekly_menus selling_locations reviews].freeze
+
+  after_discard :discard_owned_records
+  after_undiscard :undiscard_owned_records
 
   # Scopes
   scope :verified, -> { where(verified: true) }
@@ -219,6 +235,24 @@ class SellerProfile < ApplicationRecord
   end
 
   private
+
+  def discard_owned_records
+    carimbo = discarded_at
+    OWNED_ASSOCIATIONS.each do |name|
+      public_send(name).kept.update_all(discarded_at: carimbo)
+    end
+  end
+
+  def undiscard_owned_records
+    # Neste ponto o proprio `discarded_at` ja e nil; o carimbo da cascata esta
+    # no valor anterior.
+    carimbo = discarded_at_previously_was
+    return if carimbo.nil?
+
+    OWNED_ASSOCIATIONS.each do |name|
+      public_send(name).where(discarded_at: carimbo).update_all(discarded_at: nil)
+    end
+  end
 
   def set_no_rating
     update_columns(

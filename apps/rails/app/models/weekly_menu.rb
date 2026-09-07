@@ -1,4 +1,6 @@
 class WeeklyMenu < ApplicationRecord
+  include Discard::Model
+
   # Associations
   belongs_to :seller_profile
   has_many :weekly_menu_dishes, dependent: :destroy
@@ -10,51 +12,30 @@ class WeeklyMenu < ApplicationRecord
   validates :available_until, presence: true
   validate :available_until_after_available_from
 
-  # Soft delete scopes
-  scope :not_deleted, -> { where(deleted_at: nil) }
-  scope :deleted, -> { where.not(deleted_at: nil) }
-
   # Scopes
-  scope :active, -> { where(active: true).not_deleted }
+  scope :active, -> { kept.where(active: true) }
   scope :for_seller, ->(seller_profile_id) { where(seller_profile_id: seller_profile_id) }
   scope :available_now, -> {
     where('available_from <= ? AND available_until >= ?', Time.current, Time.current)
       .where(active: true)
-      .not_deleted
+      .kept
   }
   scope :upcoming, -> {
     where('available_from > ?', Time.current)
       .where(active: true)
-      .not_deleted
+      .kept
       .order(available_from: :asc)
   }
   scope :past, -> {
     where('available_until < ?', Time.current)
-      .not_deleted
+      .kept
       .order(available_from: :desc)
   }
 
-  # Soft delete methods
-  def soft_delete
-    update_column(:deleted_at, Time.current)
-  end
-
-  def restore!
-    update_column(:deleted_at, nil)
-  end
-
-  def deleted?
-    deleted_at.present?
-  end
-
-  # Override destroy to use soft delete
-  def destroy
-    soft_delete
-  end
-
-  def destroy!
-    soft_delete || raise(ActiveRecord::RecordNotDestroyed.new("Failed to destroy the record", self))
-  end
+  # O soft delete artesanal (`deleted_at`, `soft_delete`, e um `destroy`
+  # sobrescrito que so gravava a coluna) virou `Discard::Model`. O `destroy`
+  # sobrescrito era a parte perigosa: pulava callbacks e `dependent:`, e
+  # `menu.destroy` fazia coisa diferente do resto do app.
 
   # Check if menu is currently available
   def available?
@@ -63,12 +44,12 @@ class WeeklyMenu < ApplicationRecord
 
   # Check if menu has any dishes
   def has_dishes?
-    weekly_menu_dishes.any?
+    weekly_menu_dishes.kept.any?
   end
 
   # Get total available quantity across all dishes
   def total_available_quantity
-    weekly_menu_dishes.sum(:remaining_quantity)
+    weekly_menu_dishes.kept.sum(:remaining_quantity)
   end
 
   # Duplicate menu for future use
@@ -77,13 +58,15 @@ class WeeklyMenu < ApplicationRecord
     new_menu.available_from = new_available_from || (available_from + 1.week)
     new_menu.available_until = new_available_until || (available_until + 1.week)
     new_menu.total_orders_count = 0
+    new_menu.discarded_at = nil # `dup` copia a coluna; a copia nasce viva
     new_menu.active = false # Keep duplicated menu inactive by default
 
     transaction do
       new_menu.save!
 
-      # Duplicate all dishes with their quantities
-      weekly_menu_dishes.each do |menu_dish|
+      # Prato descartado nao volta para um cardapio novo — a linha antiga fica
+      # onde esta, como registro do dia em que ele foi vendido.
+      weekly_menu_dishes.kept.joins(:dish).merge(Dish.kept).each do |menu_dish|
         new_menu.weekly_menu_dishes.create!(
           dish_id: menu_dish.dish_id,
           available_quantity: menu_dish.available_quantity,
@@ -101,7 +84,7 @@ class WeeklyMenu < ApplicationRecord
   def whatsapp_message
     message = "🍱 *#{title || 'Cardápio da Semana'}* - #{seller_profile.business_name}\n\n"
 
-    weekly_menu_dishes.order(:display_order).each do |menu_dish|
+    weekly_menu_dishes.ordered.each do |menu_dish|
       dish = menu_dish.dish
       price = menu_dish.price_override || dish.base_price
       message += "*#{dish.name}*\n"

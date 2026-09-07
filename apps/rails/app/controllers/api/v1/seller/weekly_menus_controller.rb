@@ -11,7 +11,7 @@ module Api
         def index
           authorize [ :seller, WeeklyMenu ], :index?
 
-          @menus = current_user.seller_profile.weekly_menus.order(available_from: :desc)
+          @menus = current_user.seller_profile.weekly_menus.kept.order(available_from: :desc)
 
           # Filter by status
           @menus = case params[:status]
@@ -77,7 +77,7 @@ module Api
             }, status: :unprocessable_entity
           end
 
-          @menu.destroy
+          @menu.discard
           render json: { message: 'Daily menu deleted successfully' }, status: :ok
         end
 
@@ -85,13 +85,13 @@ module Api
         def add_dish
           authorize [ :seller, @menu ], :add_dish?
 
-          dish = current_user.seller_profile.dishes.find(params[:dish_id])
+          dish = current_user.seller_profile.dishes.kept.find(params[:dish_id])
 
           menu_dish = @menu.weekly_menu_dishes.build(
             dish: dish,
             available_quantity: params[:available_quantity],
             price_override: params[:price_override],
-            display_order: params[:display_order] || @menu.weekly_menu_dishes.count
+            display_order: params[:display_order] || @menu.weekly_menu_dishes.kept.count
           )
 
           if menu_dish.save
@@ -110,13 +110,15 @@ module Api
         def remove_dish
           authorize [ :seller, @menu ], :remove_dish?
 
-          menu_dish = @menu.weekly_menu_dishes.find_by(dish_id: params[:dish_id])
+          menu_dish = @menu.weekly_menu_dishes.kept.find_by(dish_id: params[:dish_id])
 
           unless menu_dish
             return render json: { error: 'Dish not in menu' }, status: :not_found
           end
 
-          menu_dish.destroy
+          # Descarta em vez de apagar: esta linha guarda quanto do prato saiu
+          # naquele dia.
+          menu_dish.discard
           render json: {
             message: 'Dish removed from menu successfully',
             menu: menu_detail(@menu.reload)
@@ -158,7 +160,7 @@ module Api
         private
 
         def set_menu
-          @menu = current_user.seller_profile.weekly_menus.find(params[:id])
+          @menu = current_user.seller_profile.weekly_menus.kept.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: 'Menu not found' }, status: :not_found
         end
@@ -182,7 +184,7 @@ module Api
             available_until: menu.available_until,
             active: menu.active,
             is_available: menu.available?,
-            dishes_count: menu.weekly_menu_dishes.count,
+            dishes_count: menu.weekly_menu_dishes.kept.count,
             total_available_quantity: menu.total_available_quantity,
             total_orders_count: menu.total_orders_count,
             created_at: menu.created_at

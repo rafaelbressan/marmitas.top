@@ -11,8 +11,8 @@ module Api
 
         render json: {
           favorites: @favorites.map { |fav| favorite_response(fav) },
-          dishes: current_user.favorited_dishes.includes(:seller_profile).map { |dish| dish_favorite_response(dish) },
-          sellers: current_user.favorited_sellers.includes(:user).map { |seller| seller_favorite_response(seller) }
+          dishes: current_user.favorited_dishes.kept.includes(:seller_profile).map { |dish| dish_favorite_response(dish) },
+          sellers: current_user.favorited_sellers.kept.includes(:user).map { |seller| seller_favorite_response(seller) }
         }, status: :ok
       end
 
@@ -20,7 +20,7 @@ module Api
       def dishes
         authorize Favorite, :dishes?
 
-        @dishes = current_user.favorited_dishes.includes(:seller_profile, photos_attachments: :blob).order('favorites.created_at DESC')
+        @dishes = current_user.favorited_dishes.kept.includes(:seller_profile, photos_attachments: :blob).order('favorites.created_at DESC')
 
         render json: {
           dishes: @dishes.map { |dish| dish_favorite_response(dish) }
@@ -31,7 +31,7 @@ module Api
       def sellers
         authorize Favorite, :sellers?
 
-        @sellers = current_user.favorited_sellers.includes(:user).order('favorites.created_at DESC')
+        @sellers = current_user.favorited_sellers.kept.includes(:user).order('favorites.created_at DESC')
 
         render json: {
           sellers: @sellers.map { |seller| seller_favorite_response(seller) }

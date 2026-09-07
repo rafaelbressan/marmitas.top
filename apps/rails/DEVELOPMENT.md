@@ -181,9 +181,46 @@ Comandos úteis:
 ```bash
 bin/rails db:prepare        # cria e carrega o structure.sql
 bin/rails db:migrate        # aplica migrations e regrava o structure.sql
-bin/rails db:drop db:prepare           # do zero
+bin/rails db:drop && bin/rails db:prepare   # do zero, em DOIS processos
 docker compose -f docker-compose.dev.yml down -v   # apaga o volume também
 ```
+
+`db:drop db:prepare` **encadeado no mesmo `bin/rails` não funciona**: o
+`db:prepare` recria o banco mas pula o carregamento do `db/structure.sql`, e o
+`db/seeds.rb` morre no primeiro `INSERT` com `relation "users" does not exist`.
+Rode os dois como processos separados.
+
+## Deleção: nada é destruído
+
+`DELETE` na API **descarta**, não apaga. Os models que guardam histórico usam
+`gem "discard"` e a coluna `discarded_at`:
+
+`SellerProfile`, `Dish`, `WeeklyMenu`, `WeeklyMenuDish`, `SellingLocation`,
+`Review`.
+
+Duas regras que valem para todo código novo:
+
+1. **Toda consulta que mostra registro precisa de `kept`.** Discard não instala
+   `default_scope` de propósito — filtrar é escolha explícita. Os escopos que
+   já significam "visível" (`WeeklyMenu.active`, `Review.published`,
+   `Dish.active`, `WeeklyMenuDish.ordered`) já embutem `kept`; fora deles,
+   escreva `.kept` na consulta.
+2. **A cascata desce pela árvore de dono, e só por ela.** Descartar um
+   marmiteiro descarta os pratos, cardápios, pontos de venda e avaliações dele
+   (`SellerProfile::OWNED_ASSOCIATIONS`). A cascata carimba os filhos com o
+   `discarded_at` exato do pai, para que `undiscard` restaure o que ela
+   descartou e não o que já estava descartado antes.
+
+`weekly_menu_dishes` é o registro do que foi vendido naquele dia
+(`available_quantity` / `remaining_quantity`). Ele **não** é descartado por
+cascata de prato: descartar a Feijoada não pode apagar quantas feijoadas
+saíram na terça. Por isso o índice único `(weekly_menu_id, dish_id)` é parcial
+(`WHERE discarded_at IS NULL`) — o mesmo prato pode ter sido tirado e
+recolocado no cardápio, e as duas passagens ficam no banco.
+
+`Favorite`, `DeviceToken` e `ReviewHelpful` continuam com delete de verdade:
+são registros que a própria pessoa refaz com um toque e não guardam histórico
+de ninguém.
 
 ## CORS
 

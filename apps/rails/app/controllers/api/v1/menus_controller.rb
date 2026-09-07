@@ -27,7 +27,7 @@ module Api
 
       # GET /api/v1/menus/:id
       def show
-        @menu = WeeklyMenu.find(params[:id])
+        @menu = WeeklyMenu.kept.find(params[:id])
         authorize @menu, :show?
 
         render json: {
@@ -55,7 +55,7 @@ module Api
       def seller_menus
         authorize WeeklyMenu, :seller_menus?
 
-        @seller = SellerProfile.find(params[:seller_id])
+        @seller = SellerProfile.kept.find(params[:seller_id])
         @menus = @seller.weekly_menus.active.available_now
                         .includes(weekly_menu_dishes: { dish: :photos })
                         .order(available_from: :desc)
@@ -77,7 +77,7 @@ module Api
           description: menu.description,
           available_from: menu.available_from,
           available_until: menu.available_until,
-          dishes_count: menu.weekly_menu_dishes.count,
+          dishes_count: menu.weekly_menu_dishes.kept.count,
           total_available_quantity: menu.total_available_quantity,
           seller: {
             id: seller.id,

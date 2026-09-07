@@ -108,7 +108,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
   def destroy
     authorize @review, :destroy?
 
-    @review.destroy
+    @review.discard
     render json: { message: 'Avaliação removida com sucesso' }
   end
 
@@ -145,11 +145,11 @@ class Api::V1::ReviewsController < Api::V1::BaseController
   private
 
   def set_seller_profile
-    @seller_profile = SellerProfile.find(params[:seller_id] || params[:seller_profile_id])
+    @seller_profile = SellerProfile.kept.find(params[:seller_id] || params[:seller_profile_id])
   end
 
   def set_review
-    @review = Review.find(params[:id])
+    @review = Review.kept.find(params[:id])
   end
 
   def review_params

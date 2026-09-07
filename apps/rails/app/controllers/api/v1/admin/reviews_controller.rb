@@ -5,7 +5,7 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
   def index
     authorize [ :admin, Review ], :index?
 
-    @reviews = Review.includes(:user, :seller_profile)
+    @reviews = Review.kept.includes(:user, :seller_profile)
 
     # Filter by moderation status
     case params[:status]
@@ -97,7 +97,7 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
   private
 
   def set_review
-    @review = Review.find(params[:id])
+    @review = Review.kept.find(params[:id])
   end
 
   def moderation_stats

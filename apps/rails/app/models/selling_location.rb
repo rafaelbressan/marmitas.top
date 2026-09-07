@@ -1,4 +1,6 @@
 class SellingLocation < ApplicationRecord
+  include Discard::Model
+
   # Associations
   belongs_to :seller_profile
   has_many :seller_profiles_using, class_name: 'SellerProfile', foreign_key: :current_location_id, dependent: :nullify
