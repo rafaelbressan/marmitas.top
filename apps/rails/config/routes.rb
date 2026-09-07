@@ -32,6 +32,9 @@ Rails.application.routes.draw do
       namespace :seller do
         resource :profile, only: [ :show, :create, :update, :destroy ]
 
+        # Resumo do dia da tela "Minha loja"
+        resource :dashboard, only: [ :show ]
+
         resources :dishes, only: [ :index, :show, :create, :update, :destroy ] do
           collection do
             get :favorites_stats
