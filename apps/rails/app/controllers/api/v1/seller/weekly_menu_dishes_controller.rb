@@ -13,7 +13,8 @@ module Api
       # e erro. "Vendi 3" e "sobraram 3" sao coisas diferentes e o servidor nao
       # adivinha qual delas o app quis dizer.
       class WeeklyMenuDishesController < BaseController
-        before_action :require_seller_profile
+        include SellerProfileScope
+
         before_action :set_menu_dish
 
         # PATCH /api/v1/seller/weekly_menus/:id/dishes/:dish_id/quantity
@@ -81,8 +82,8 @@ module Api
         # quem esta autenticado, entao o cardapio de outro marmiteiro simplesmente
         # nao existe aqui.
         def set_menu_dish
-          menu = current_user.seller_profile.weekly_menus.find(params[:id])
-          @menu_dish = menu.weekly_menu_dishes.find_by(dish_id: params[:dish_id])
+          menu = seller_profile.weekly_menus.kept.find(params[:id])
+          @menu_dish = menu.weekly_menu_dishes.kept.find_by(dish_id: params[:dish_id])
 
           render json: { error: "Dish not in menu" }, status: :not_found if @menu_dish.nil?
         rescue ActiveRecord::RecordNotFound

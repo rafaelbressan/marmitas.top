@@ -28,11 +28,4 @@ class ApplicationController < ActionController::API
   def deny_access
     render json: { error: "Acesso nao autorizado" }, status: :forbidden
   end
-
-  # O painel do marmiteiro pressupoe perfil. Sem ele os controllers chamavam
-  # `current_user.seller_profile.dishes` e estouravam com NoMethodError (500);
-  # agora e uma negacao de acesso, 403, igual a qualquer outra.
-  def require_seller_profile
-    raise Pundit::NotAuthorizedError, "seller profile required" unless current_user&.seller_profile
-  end
 end

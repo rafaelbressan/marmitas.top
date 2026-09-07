@@ -69,7 +69,7 @@ moderação. Essa regra continua no model; a policy chama, não reescreve.
 | `GET seller/profile` | ❌ | ✅ | ✅ | ✅ | ✅ | `Seller::SellerProfilePolicy#show?` |
 | `POST seller/profile` | ❌ | ✅ | ✅ | ✅ | ✅ | `Seller::SellerProfilePolicy#create?` |
 | `PATCH seller/profile` | ❌ | ❌ | ✅ | ❌ | ❌ | `Seller::SellerProfilePolicy#update?` |
-| `DELETE seller/profile` | ❌ | ❌ | ❌ | ❌ | ❌ | rota morta — ver nota |
+| `DELETE seller/profile` | ❌ | ❌ | ✅ | ❌ | ❌ | `Seller::SellerProfilePolicy#destroy?` |
 | `GET seller/dashboard` | ❌ | ❌ | ✅ (o seu) | ✅ (o seu) | ❌ | `Seller::DashboardPolicy#show?` |
 | `GET seller/dishes` | ❌ | ❌ | ✅ | ✅ (os seus) | ❌ | `Seller::DishPolicy#index?` |
 | `GET seller/dishes/favorites_stats` | ❌ | ❌ | ✅ | ✅ (os seus) | ❌ | `Seller::DishPolicy#favorites_stats?` |
@@ -96,14 +96,19 @@ O admin não entra no painel de ninguém: não tem perfil de marmiteiro e
 mensagem de "crie um perfil primeiro" fica no controller porque é mais útil que
 o 403 genérico; a policy diz a mesma coisa e existe para o `verify_authorized`.
 
+Em `seller/dishes`, `seller/weekly_menus`, `seller/selling_locations`,
+`seller/position` e a baixa de quantidade, o `SellerProfileScope` (BRES-140)
+roda antes de qualquer busca e responde 403 para quem não tem perfil vivo. É
+ele que impede o `nil.dishes` que antes virava 500.
+
 `GET`/`POST seller/profile` valem para qualquer conta porque são o caminho de
 cadastro — quem ainda não é marmiteiro precisa poder perguntar (404 "crie um
 primeiro") e criar.
 
-`DELETE seller/profile` responde 404 sempre: o `before_action :set_profile`
-cobre só `[:show, :update]`, então `@profile` nunca é carregado. Não foi
-consertado na BRES-103 porque ligar um delete em cascata (pratos, cardápios,
-pontos de venda e avaliações) é mudança de comportamento, não de autorização.
+`DELETE seller/profile` descarta o perfil e tudo o que é dele (BRES-140): as
+linhas ficam no banco e somem da API. `POST seller/profile` traz de volta. Um
+perfil descartado não existe para o painel — o `SellerProfileScope` responde
+403 em `seller/*` como se o marmiteiro nunca tivesse criado o perfil.
 
 ## Moderação (`api/v1/admin/*`)
 

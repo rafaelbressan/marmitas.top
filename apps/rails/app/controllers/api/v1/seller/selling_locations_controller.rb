@@ -2,9 +2,8 @@ module Api
   module V1
     module Seller
       class SellingLocationsController < BaseController
-        # Roda antes dos `set_*`: sem perfil, `current_user.seller_profile`
-        # era `nil` e a busca estourava 500 em vez de negar acesso.
-        before_action :require_seller_profile
+        include SellerProfileScope
+
         before_action :set_ponto, only: [ :show, :update, :destroy ]
         before_action :set_location, only: [ :arrive, :leave ]
 
@@ -14,7 +13,7 @@ module Api
 
           # A linha "circulando" e posicao ao vivo, nao um lugar salvo: fica
           # fora da lista de pontos e do limite de 3.
-          @locations = current_user.seller_profile.selling_locations.pontos.order(created_at: :asc)
+          @locations = seller_profile.selling_locations.kept.pontos.order(created_at: :asc)
 
           render json: {
             locations: @locations.map { |location| location_response(location) }
@@ -32,11 +31,7 @@ module Api
         def create
           authorize [ :seller, SellingLocation ], :create?
 
-          unless current_user.seller_profile
-            return render json: { error: "Seller profile required" }, status: :forbidden
-          end
-
-          @location = current_user.seller_profile.selling_locations.build(location_params)
+          @location = seller_profile.selling_locations.build(location_params)
 
           if @location.save
             render json: {
@@ -67,13 +62,13 @@ module Api
           authorize [ :seller, @location ], :destroy?
 
           # Don't allow deleting current active location
-          if current_user.seller_profile.current_location_id == @location.id
+          if seller_profile.current_location_id == @location.id
             return render json: {
               error: "Cannot delete location while broadcasting from it. Please leave first."
             }, status: :unprocessable_entity
           end
 
-          @location.destroy
+          @location.discard
           render json: { message: "Selling location deleted successfully" }, status: :ok
         end
 
@@ -82,8 +77,8 @@ module Api
           authorize [ :seller, @location ], :arrive?
 
           # Check if already broadcasting from another location
-          if current_user.seller_profile.currently_active && current_user.seller_profile.current_location_id != @location.id
-            current_location = current_user.seller_profile.current_location
+          if seller_profile.currently_active && seller_profile.current_location_id != @location.id
+            current_location = seller_profile.current_location
             return render json: {
               error: "Already broadcasting from #{current_location.name}. Please leave first."
             }, status: :unprocessable_entity
@@ -92,7 +87,7 @@ module Api
           leaving_at = parse_leaving_time
 
           begin
-            current_user.seller_profile.announce_arrival(@location.id, leaving_at: leaving_at)
+            seller_profile.announce_arrival(@location.id, leaving_at: leaving_at)
 
             render json: {
               message: "Arrival announced successfully",
@@ -107,15 +102,15 @@ module Api
         def leave
           authorize [ :seller, @location ], :leave?
 
-          unless current_user.seller_profile.currently_active
+          unless seller_profile.currently_active
             return render json: { error: "Not currently broadcasting" }, status: :unprocessable_entity
           end
 
-          unless current_user.seller_profile.current_location_id == @location.id
+          unless seller_profile.current_location_id == @location.id
             return render json: { error: "Not at this location" }, status: :unprocessable_entity
           end
 
-          current_user.seller_profile.announce_departure
+          seller_profile.announce_departure
 
           render json: {
             message: "Departure announced successfully",
@@ -128,13 +123,13 @@ module Api
         # arrive/leave valem tambem para o turno do ambulante, entao aqui a linha
         # "circulando" e alcancavel.
         def set_location
-          @location = current_user.seller_profile.selling_locations.find(params[:id])
+          @location = seller_profile.selling_locations.kept.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: "Location not found" }, status: :not_found
         end
 
         def set_ponto
-          @location = current_user.seller_profile.selling_locations.pontos.find(params[:id])
+          @location = seller_profile.selling_locations.pontos.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: "Location not found" }, status: :not_found
         end
@@ -158,7 +153,7 @@ module Api
             hours = params[:hours_from_now].to_f
             max_hours = (SellerProfile::MAX_BROADCAST_DURATION / 1.hour).to_i
             if hours > max_hours
-              raise ActiveRecord::RecordInvalid.new(current_user.seller_profile.tap { |sp|
+              raise ActiveRecord::RecordInvalid.new(seller_profile.tap { |sp|
                 sp.errors.add(:leaving_at, "cannot be more than #{max_hours} hours from now")
               })
             end
@@ -175,14 +170,14 @@ module Api
             longitude: location.longitude&.to_f,
             notes: location.notes,
             kind: location.kind,
-            is_current: current_user.seller_profile.current_location_id == location.id,
+            is_current: seller_profile.current_location_id == location.id,
             created_at: location.created_at,
             updated_at: location.updated_at
           }
         end
 
         def seller_broadcast_status
-          profile = current_user.seller_profile.reload
+          profile = seller_profile.reload
           {
             id: profile.id,
             business_name: profile.business_name,

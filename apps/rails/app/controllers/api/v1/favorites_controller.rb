@@ -1,18 +1,22 @@
 module Api
   module V1
     class FavoritesController < ApplicationController
+      # Este controller nao herda de BaseController, entao o concern nao chega
+      # sozinho — e `seller_favorite_response` usa `live_position_visible?`.
+      include LivePositionVisibility
+
       before_action :authenticate_user!
 
       # GET /api/v1/favorites
       def index
         authorize Favorite, :index?
 
-        @favorites = current_user.favorites.includes(:favoritable).order(created_at: :desc)
+        @favorites = current_user.favorites.kept_favoritable.includes(:favoritable).order(created_at: :desc)
 
         render json: {
           favorites: @favorites.map { |fav| favorite_response(fav) },
-          dishes: current_user.favorited_dishes.includes(:seller_profile).map { |dish| dish_favorite_response(dish) },
-          sellers: current_user.favorited_sellers.includes(:user).map { |seller| seller_favorite_response(seller) }
+          dishes: current_user.favorited_dishes.kept.includes(:seller_profile).map { |dish| dish_favorite_response(dish) },
+          sellers: current_user.favorited_sellers.kept.includes(:user).map { |seller| seller_favorite_response(seller) }
         }, status: :ok
       end
 
@@ -20,7 +24,7 @@ module Api
       def dishes
         authorize Favorite, :dishes?
 
-        @dishes = current_user.favorited_dishes.includes(:seller_profile, photos_attachments: :blob).order("favorites.created_at DESC")
+        @dishes = current_user.favorited_dishes.kept.includes(:seller_profile, photos_attachments: :blob).order("favorites.created_at DESC")
 
         render json: {
           dishes: @dishes.map { |dish| dish_favorite_response(dish) }
@@ -31,7 +35,7 @@ module Api
       def sellers
         authorize Favorite, :sellers?
 
-        @sellers = current_user.favorited_sellers.includes(:user).order("favorites.created_at DESC")
+        @sellers = current_user.favorited_sellers.kept.includes(:user).order("favorites.created_at DESC")
 
         render json: {
           sellers: @sellers.map { |seller| seller_favorite_response(seller) }
@@ -64,7 +68,6 @@ module Api
       def destroy
         @favorite = current_user.favorites.find(params[:id])
         authorize @favorite, :destroy?
-
         @favorite.destroy
 
         render json: { message: "Removed from favorites successfully" }, status: :ok
@@ -119,9 +122,9 @@ module Api
 
         case favoritable_type
         when "Dish"
-          Dish.find_by(id: favoritable_id)
+          Dish.kept.find_by(id: favoritable_id)
         when "SellerProfile", "Seller"
-          SellerProfile.find_by(id: favoritable_id)
+          SellerProfile.kept.find_by(id: favoritable_id)
         else
           nil
         end

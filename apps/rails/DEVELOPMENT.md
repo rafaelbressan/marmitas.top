@@ -185,6 +185,27 @@ bin/rails db:drop db:prepare           # do zero
 docker compose -f docker-compose.dev.yml down -v   # apaga o volume também
 ```
 
+## Nada e apagado
+
+Deletar no produto e **descartar** (`gem "discard"`, coluna `discarded_at`),
+igual ao `egerian`. `SellerProfile`, `Dish`, `WeeklyMenu`, `SellingLocation` e
+`Review` sao descartaveis; `Favorite`, `DeviceToken` e `ReviewHelpful` continuam
+com delete de verdade, porque a propria pessoa refaz com um toque.
+
+Regras que valem em todo codigo novo (BRES-140):
+
+- Controller nunca chama `destroy` num modelo descartavel — chama `discard`.
+- Toda consulta que mostra o registro passa por `kept`.
+- Descartar um marmiteiro desce para os pratos, cardapios, pontos de venda e
+  avaliacoes dele; `undiscard` devolve exatamente o que caiu nessa cascata.
+- `weekly_menu_dishes` fica **fora** da cascata: e o registro de quanto foi
+  anunciado e quanto sobrou naquele dia.
+
+```bash
+bin/rails test test/models/discard_cascade_test.rb
+bin/rails test test/integration/api/v1/discard_test.rb
+```
+
 ## Trabalhos em segundo plano (Solid Queue)
 
 As tabelas do Solid Queue ficam no **banco principal**, criadas por migration

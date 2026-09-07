@@ -2,7 +2,7 @@ module Api
   module V1
     module Seller
       class ProfilesController < BaseController
-        before_action :set_profile, only: [ :show, :update ]
+        before_action :set_profile, only: [ :show, :update, :destroy ]
 
         # GET /api/v1/seller/profile
         def show
@@ -18,6 +18,10 @@ module Api
         # POST /api/v1/seller/profile
         def create
           authorize [ :seller, ::SellerProfile ], :create?
+
+          discarded = discarded_profile
+
+          return restore(discarded) if discarded
 
           if current_user.seller_profile
             return render json: { error: "Seller profile already exists" }, status: :unprocessable_entity
@@ -56,11 +60,9 @@ module Api
 
         # DELETE /api/v1/seller/profile
         #
-        # ATENCAO: `set_profile` nao cobre esta acao (`only: [:show, :update]`),
-        # entao `@profile` e sempre nil e a rota sempre responde 404. Nao foi
-        # consertado aqui de proposito: ligar um delete em cascata
-        # (pratos, cardapios, pontos de venda e avaliacoes) e mudanca de
-        # comportamento, nao de autorizacao.
+        # Descarta, nao apaga: o perfil e tudo o que ele e dono — pratos,
+        # cardapios, pontos de venda e avaliacoes — continuam no banco e somem da
+        # API. `POST /api/v1/seller/profile` traz tudo de volta.
         def destroy
           unless @profile
             skip_authorization
@@ -69,14 +71,44 @@ module Api
 
           authorize [ :seller, @profile ], :destroy?
 
-          @profile.destroy
+          @profile.discard
           render json: { message: "Seller profile deleted successfully" }, status: :ok
         end
 
         private
 
+        # Um perfil descartado nao existe para a API: `show`, `update` e `destroy`
+        # respondem 404 como se nunca tivesse sido criado.
         def set_profile
-          @profile = current_user.seller_profile
+          profile = current_user.seller_profile
+
+          @profile = profile&.discarded? ? nil : profile
+        end
+
+        def discarded_profile
+          profile = current_user.seller_profile
+
+          profile if profile&.discarded?
+        end
+
+        # Recriar o perfil e desfazer o descarte: a arvore inteira volta com ele.
+        def restore(profile)
+          profile.assign_attributes(profile_params)
+
+          restored = profile.transaction do
+            raise ActiveRecord::Rollback unless profile.save
+
+            profile.undiscard
+          end
+
+          if restored
+            render json: {
+              message: "Seller profile restored successfully",
+              profile: profile_response(profile)
+            }, status: :ok
+          else
+            render json: { errors: profile.errors.full_messages }, status: :unprocessable_entity
+          end
         end
 
         def profile_params
