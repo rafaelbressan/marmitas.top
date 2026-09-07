@@ -2,10 +2,15 @@ module Api
   module V1
     module Seller
       class WeeklyMenusController < BaseController
+        # Roda antes do `set_menu`: sem perfil, `current_user.seller_profile`
+        # era `nil` e a busca estourava 500 em vez de negar acesso.
+        before_action :require_seller_profile
         before_action :set_menu, only: [:show, :update, :destroy, :add_dish, :remove_dish, :duplicate, :whatsapp_text]
 
         # GET /api/v1/seller/weekly_menus
         def index
+          authorize [ :seller, WeeklyMenu ], :index?
+
           @menus = current_user.seller_profile.weekly_menus.order(available_from: :desc)
 
           # Filter by status
@@ -27,14 +32,14 @@ module Api
 
         # GET /api/v1/seller/weekly_menus/:id
         def show
+          authorize [ :seller, @menu ], :show?
+
           render json: { menu: menu_detail(@menu) }, status: :ok
         end
 
         # POST /api/v1/seller/weekly_menus
         def create
-          unless current_user.seller_profile
-            return render json: { error: 'Seller profile required' }, status: :forbidden
-          end
+          authorize [ :seller, WeeklyMenu ], :create?
 
           @menu = current_user.seller_profile.weekly_menus.build(menu_params)
 
@@ -50,6 +55,8 @@ module Api
 
         # PATCH /api/v1/seller/weekly_menus/:id
         def update
+          authorize [ :seller, @menu ], :update?
+
           if @menu.update(menu_params)
             render json: {
               message: 'Daily menu updated successfully',
@@ -62,6 +69,8 @@ module Api
 
         # DELETE /api/v1/seller/weekly_menus/:id
         def destroy
+          authorize [ :seller, @menu ], :destroy?
+
           if @menu.available?
             return render json: {
               error: 'Cannot delete an active menu'
@@ -74,6 +83,8 @@ module Api
 
         # POST /api/v1/seller/weekly_menus/:id/add_dish
         def add_dish
+          authorize [ :seller, @menu ], :add_dish?
+
           dish = current_user.seller_profile.dishes.find(params[:dish_id])
 
           menu_dish = @menu.weekly_menu_dishes.build(
@@ -97,6 +108,8 @@ module Api
 
         # DELETE /api/v1/seller/weekly_menus/:id/remove_dish/:dish_id
         def remove_dish
+          authorize [ :seller, @menu ], :remove_dish?
+
           menu_dish = @menu.weekly_menu_dishes.find_by(dish_id: params[:dish_id])
 
           unless menu_dish
@@ -112,6 +125,8 @@ module Api
 
         # POST /api/v1/seller/weekly_menus/:id/duplicate
         def duplicate
+          authorize [ :seller, @menu ], :duplicate?
+
           new_available_from = params[:available_from]&.to_datetime
           new_available_until = params[:available_until]&.to_datetime
 
@@ -132,6 +147,8 @@ module Api
 
         # GET /api/v1/seller/weekly_menus/:id/whatsapp_text
         def whatsapp_text
+          authorize [ :seller, @menu ], :whatsapp_text?
+
           render json: {
             message: @menu.whatsapp_message,
             encoded_message: ERB::Util.url_encode(@menu.whatsapp_message)

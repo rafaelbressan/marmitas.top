@@ -2,10 +2,16 @@ module Api
   module V1
     module Seller
       class DishesController < BaseController
+        # Antes: `current_user.seller_profile.dishes` estourava NoMethodError
+        # (500) para quem nao tem perfil. Agora e 403, e roda antes do
+        # `set_dish` justamente por isso.
+        before_action :require_seller_profile
         before_action :set_dish, only: [:show, :update, :destroy]
 
         # GET /api/v1/seller/dishes
         def index
+          authorize [ :seller, Dish ], :index?
+
           @dishes = current_user.seller_profile.dishes.order(created_at: :desc)
           @dishes = @dishes.active if params[:active_only] == 'true'
 
@@ -16,6 +22,8 @@ module Api
 
         # GET /api/v1/seller/dishes/favorites_stats
         def favorites_stats
+          authorize [ :seller, Dish ], :favorites_stats?
+
           @dishes = current_user.seller_profile.dishes
                                 .order(favorites_count: :desc)
                                 .limit(params[:limit] || 10)
@@ -39,14 +47,14 @@ module Api
 
         # GET /api/v1/seller/dishes/:id
         def show
+          authorize [ :seller, @dish ], :show?
+
           render json: { dish: dish_response(@dish) }, status: :ok
         end
 
         # POST /api/v1/seller/dishes
         def create
-          unless current_user.seller_profile
-            return render json: { error: 'Seller profile required' }, status: :forbidden
-          end
+          authorize [ :seller, Dish ], :create?
 
           @dish = current_user.seller_profile.dishes.build(dish_params)
 
@@ -63,6 +71,8 @@ module Api
 
         # PATCH /api/v1/seller/dishes/:id
         def update
+          authorize [ :seller, @dish ], :update?
+
           if @dish.update(dish_params)
             attach_photos if params[:dish][:photos].present?
             render json: {
@@ -76,6 +86,8 @@ module Api
 
         # DELETE /api/v1/seller/dishes/:id
         def destroy
+          authorize [ :seller, @dish ], :destroy?
+
           # Check if dish is in any active menus
           if @dish.weekly_menus.active.available_now.any?
             return render json: {

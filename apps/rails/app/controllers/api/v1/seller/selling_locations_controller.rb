@@ -2,10 +2,15 @@ module Api
   module V1
     module Seller
       class SellingLocationsController < BaseController
+        # Roda antes do `set_location`: sem perfil, `current_user.seller_profile`
+        # era `nil` e a busca estourava 500 em vez de negar acesso.
+        before_action :require_seller_profile
         before_action :set_location, only: [:show, :update, :destroy, :arrive, :leave]
 
         # GET /api/v1/seller/selling_locations
         def index
+          authorize [ :seller, SellingLocation ], :index?
+
           @locations = current_user.seller_profile.selling_locations.order(created_at: :asc)
 
           render json: {
@@ -15,14 +20,14 @@ module Api
 
         # GET /api/v1/seller/selling_locations/:id
         def show
+          authorize [ :seller, @location ], :show?
+
           render json: { location: location_response(@location) }, status: :ok
         end
 
         # POST /api/v1/seller/selling_locations
         def create
-          unless current_user.seller_profile
-            return render json: { error: 'Seller profile required' }, status: :forbidden
-          end
+          authorize [ :seller, SellingLocation ], :create?
 
           @location = current_user.seller_profile.selling_locations.build(location_params)
 
@@ -38,6 +43,8 @@ module Api
 
         # PATCH /api/v1/seller/selling_locations/:id
         def update
+          authorize [ :seller, @location ], :update?
+
           if @location.update(location_params)
             render json: {
               message: 'Selling location updated successfully',
@@ -50,6 +57,8 @@ module Api
 
         # DELETE /api/v1/seller/selling_locations/:id
         def destroy
+          authorize [ :seller, @location ], :destroy?
+
           # Don't allow deleting current active location
           if current_user.seller_profile.current_location_id == @location.id
             return render json: {
@@ -63,6 +72,8 @@ module Api
 
         # POST /api/v1/seller/selling_locations/:id/arrive
         def arrive
+          authorize [ :seller, @location ], :arrive?
+
           # Check if already broadcasting from another location
           if current_user.seller_profile.currently_active && current_user.seller_profile.current_location_id != @location.id
             current_location = current_user.seller_profile.current_location
@@ -87,6 +98,8 @@ module Api
 
         # POST /api/v1/seller/selling_locations/:id/leave
         def leave
+          authorize [ :seller, @location ], :leave?
+
           unless current_user.seller_profile.currently_active
             return render json: { error: 'Not currently broadcasting' }, status: :unprocessable_entity
           end

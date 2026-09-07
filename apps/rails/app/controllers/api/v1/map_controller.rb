@@ -6,6 +6,8 @@ module Api
       # GET /api/v1/map/sellers
       # Returns active sellers with their locations in a map-friendly format
       def sellers
+        authorize :map, :sellers?
+
         unless params[:latitude] && params[:longitude]
           return render json: { error: 'Latitude and longitude required' }, status: :bad_request
         end
@@ -70,6 +72,8 @@ module Api
       # GET /api/v1/map/bounds
       # Returns sellers within a bounding box (for map pan/zoom)
       def bounds
+        authorize :map, :bounds?
+
         unless params[:ne_lat] && params[:ne_lng] && params[:sw_lat] && params[:sw_lng]
           return render json: {
             error: 'Bounding box required (ne_lat, ne_lng, sw_lat, sw_lng)'

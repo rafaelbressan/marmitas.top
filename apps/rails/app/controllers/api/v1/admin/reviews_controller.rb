@@ -1,10 +1,10 @@
 class Api::V1::Admin::ReviewsController < Api::V1::BaseController
-  before_action :authenticate_user!
-  before_action :require_admin!
   before_action :set_review, only: [:show, :approve, :remove]
 
   # GET /api/v1/admin/reviews
   def index
+    authorize [ :admin, Review ], :index?
+
     @reviews = Review.includes(:user, :seller_profile)
 
     # Filter by moderation status
@@ -36,6 +36,8 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   # GET /api/v1/admin/reviews/:id
   def show
+    authorize [ :admin, @review ], :show?
+
     # Get user's review history
     user_reviews = @review.user.reviews.order(created_at: :desc).limit(10)
 
@@ -62,6 +64,8 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   # POST /api/v1/admin/reviews/:id/approve
   def approve
+    authorize [ :admin, @review ], :approve?
+
     note = params[:note].to_s.strip
 
     @review.approve!(current_user, note)
@@ -74,6 +78,8 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   # POST /api/v1/admin/reviews/:id/remove
   def remove
+    authorize [ :admin, @review ], :remove?
+
     note = params[:note].to_s.strip
 
     if note.blank?
@@ -92,12 +98,6 @@ class Api::V1::Admin::ReviewsController < Api::V1::BaseController
 
   def set_review
     @review = Review.find(params[:id])
-  end
-
-  def require_admin!
-    unless current_user&.admin?
-      render json: { error: 'Acesso não autorizado' }, status: :forbidden
-    end
   end
 
   def moderation_stats

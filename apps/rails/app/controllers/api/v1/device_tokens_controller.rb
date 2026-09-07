@@ -6,6 +6,8 @@ module Api
 
       # GET /api/v1/device_tokens
       def index
+        authorize DeviceToken, :index?
+
         @tokens = current_user.device_tokens.order(last_used_at: :desc, created_at: :desc)
 
         render json: {
@@ -15,6 +17,8 @@ module Api
 
       # POST /api/v1/device_tokens
       def create
+        authorize DeviceToken, :create?
+
         # Find existing token or create new one
         @token = current_user.device_tokens.find_or_initialize_by(
           token: device_token_params[:token],
@@ -40,6 +44,8 @@ module Api
 
       # DELETE /api/v1/device_tokens/:id
       def destroy
+        authorize @token, :destroy?
+
         @token.destroy
 
         render json: { message: 'Device token removed successfully' }, status: :ok
@@ -47,6 +53,8 @@ module Api
 
       # POST /api/v1/device_tokens/deactivate_all
       def deactivate_all
+        authorize DeviceToken, :deactivate_all?
+
         current_user.device_tokens.active.each(&:deactivate!)
 
         render json: { message: 'All device tokens deactivated successfully' }, status: :ok
