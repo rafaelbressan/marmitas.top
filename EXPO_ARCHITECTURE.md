@@ -22,7 +22,7 @@
 ## Directory Structure
 
 ```
-frontend/
+apps/mobile/
 ├── app/                              # Expo Router (file-based routing)
 │   ├── (auth)/                       # Auth group (stacks)
 │   │   ├── login.tsx
@@ -899,8 +899,8 @@ describe('useAuth', () => {
 
 1. **Initialize Expo Project**
    ```bash
-   npx create-expo-app frontend --template tabs
-   cd frontend
+   npx create-expo-app apps/mobile --template tabs
+   cd apps/mobile
    ```
 
 2. **Install Dependencies**

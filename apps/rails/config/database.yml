@@ -1,0 +1,56 @@
+# PostgreSQL + PostGIS.
+#
+# The schema is versioned as `db/structure.sql`, not `db/schema.rb`
+# (`config.active_record.schema_format = :sql` in config/application.rb). The
+# Ruby dumper cannot represent the PostGIS `geography` column of
+# `selling_locations` and used to drop the whole table from the dump, so a
+# database created from scratch had no selling locations at all.
+#
+# Because of that, `pg_dump` and `psql` must be on your PATH and must be the
+# same major version as the server (16). See apps/rails/DEVELOPMENT.md.
+#
+# Bring the database up with `docker compose -f docker-compose.dev.yml up -d`
+# from the repository root and copy `apps/rails/.env.example` to `apps/rails/.env`.
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+# Connection details for the local Docker database. Development and test only:
+# production reads everything from the environment, with no defaults.
+local: &local
+  <<: *default
+  host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("DATABASE_PORT") { 5435 } %>
+  username: <%= ENV.fetch("DATABASE_USERNAME") { "marmitas" } %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD") { "marmitas" } %>
+
+development:
+  <<: *local
+  database: <%= ENV.fetch("DATABASE_NAME") { "marmitas_top_development" } %>
+
+# Warning: The database defined as "test" will be erased and
+# re-generated from your development database when you run "rake".
+# Do not set this db to the same as development or production.
+test:
+  <<: *local
+  database: <%= ENV.fetch("TEST_DATABASE_NAME") { "marmitas_top_test" } %>
+
+production:
+  primary: &primary_production
+    <<: *default
+    database: backend_production
+    username: backend
+    password: <%= ENV["BACKEND_DATABASE_PASSWORD"] %>
+  cache:
+    <<: *primary_production
+    database: backend_production_cache
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    database: backend_production_queue
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *primary_production
+    database: backend_production_cable
+    migrations_paths: db/cable_migrate

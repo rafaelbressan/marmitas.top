@@ -20,7 +20,7 @@
 ## Directory Structure
 
 ```
-backend/
+apps/rails/
 ├── app/
 │   ├── controllers/
 │   │   ├── api/
@@ -922,7 +922,7 @@ end
 
 1. **Initialize Rails App**
    ```bash
-   rails new backend --api --database=postgresql --skip-test
+   rails new apps/rails --api --database=postgresql --skip-test
    ```
 
 2. **Install Core Gems**

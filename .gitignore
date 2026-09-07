@@ -1,2 +1,27 @@
-build/
-dist/
+# Regras da raiz do monorepo. Cada app tem o proprio .gitignore, mais especifico:
+# `apps/rails/.gitignore` e `apps/mobile/.gitignore`.
+#
+# Padroes com `/` no inicio valem so para a raiz, para nao atropelar as regras
+# dos apps (git nao consegue reincluir um arquivo dentro de um diretorio
+# excluido por um .gitignore de cima).
+
+# Variaveis de ambiente — nenhum valor real entra no repositorio.
+.env
+.env.local
+.env.*.local
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# Artefatos e temporarios na raiz
+/build/
+/dist/
+/tmp/
+/node_modules/
+/*.log
