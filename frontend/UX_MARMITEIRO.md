@@ -55,9 +55,10 @@ As interrupções que quebram esse fluxo, e que o app tem que tratar:
   anúncio quando o prazo vence** — ver §5, item 6. Ele fica no mapa a noite
   inteira, e o consumidor vai até um ponto vazio. Isso queima o produto para os
   dois lados.
-- **Ele muda de ponto no meio da semana.** Obra nova, praça diferente. O modelo
-  hoje permite **no máximo 3 pontos salvos** (`SellingLocation#maximum_locations_per_seller`).
-  Ver a decisão em §7.
+- **Ele muda de ponto no meio da semana.** Obra nova, praça diferente. E há quem
+  nem tenha ponto: anda por uma região o dia inteiro. O modelo hoje permite **no
+  máximo 3 pontos salvos** (`SellingLocation#maximum_locations_per_seller`), o que
+  atende o vendedor fixo e trava o ambulante. Como conciliar os dois está na §7.
 
 ---
 
@@ -121,10 +122,12 @@ olhando um spinner na calçada.
 
 ### P0 — "Cheguei" (folha de baixo, não tela cheia)
 
-**Resolve:** escolher o ponto quando ele tem mais de um.
+**Resolve:** escolher o ponto quando o GPS não decide sozinho (§7).
 
-Aparece só se houver 2 ou 3 pontos salvos. Lista os pontos com o último usado no
-topo. Abaixo, "Até que horas?" com três atalhos: `2h`, `4h`, `até o fim do dia`.
+Não aparece quando ele está em cima de um ponto salvo, nem quando está longe de
+todos — nesses dois casos o botão da tela "Hoje" já resolve em 1 toque. Aparece
+só na dúvida: dois pontos salvos por perto. Lista o mais próximo no topo.
+Abaixo, "Até que horas?" com três atalhos: `2h`, `4h`, `até o fim do dia`.
 
 **Endpoints:** `POST /seller/selling_locations/:id/arrive`
 (aceita `hours_from_now` ou `leaving_at`; teto de 96h em `MAX_BROADCAST_DURATION`)
@@ -189,10 +192,13 @@ descrição, marcadores (vegetariano, sem glúten…), fotos.
 
 **Toques:** cadastrar = nome + "usar onde estou agora" + salvar = **3**.
 
+**Deixa de ser obrigatória.** Com o mecanismo da §7, os pontos aparecem sozinhos
+depois da terceira visita ao mesmo lugar. Esta tela é para quem quer preparar
+tudo antes, e para renomear ou apagar.
+
 **Limite duro:** 3 pontos por marmiteiro, validado na criação. O quarto `POST`
-falha com `"Cannot have more than 3 selling locations"`. A tela precisa mostrar
-"3 de 3" **antes** de ele digitar, não depois de tentar salvar. Isso é a decisão
-da §7.
+falha com `"Cannot have more than 3 selling locations"`. A tela mostra "3 de 3"
+**antes** de ele digitar, não depois de tentar salvar. Ver §5, item 7.
 
 ### P3 — "Minha loja"
 
@@ -271,8 +277,12 @@ Cada item aqui é uma issue de backend. Nenhum deles é contornável só com tel
    app: perguntar a duração no "Cheguei" (§3). Correção de verdade: um job
    recorrente no backend.
 
-7. **Teto de 3 pontos de venda.** `SellingLocation#maximum_locations_per_seller`.
-   Bloqueia o marmiteiro que roda a cidade. Ver §7.
+7. **O teto de 3 pontos conta anúncio avulso.** `SellingLocation#maximum_locations_per_seller`
+   conta toda linha de `selling_locations`, e não existe coluna que separe "ponto
+   salvo" de "onde eu estou hoje" (`name` é `null: false`, sem flag). O ambulante
+   estoura o teto no quarto dia de uso. **Falta:** coluna `saved` e o teto contando
+   só `saved: true`. É a mudança que destrava a §7 — uma coluna e um escopo, sem
+   endpoint novo.
 
 8. **Não existe caixa de avisos do marmiteiro.** A spec promete "novo seguidor",
    "nova avaliação", "100 seguidores". Não existe tabela de notificação, nem
@@ -347,27 +357,87 @@ coisas precisam andar juntas.
 
 ---
 
-## 7. A decisão
+## 7. Ambulante e ponto fixo: a mesma tela
 
-**Como o marmiteiro anuncia um ponto onde ele nunca vendeu antes?**
+O produto tem duas formas de vender, e as duas são legítimas:
 
-O `arrive` exige o id de um ponto **salvo**, e o modelo permite no máximo 3
-pontos salvos. Quem vende sempre nos mesmos lugares está bem servido. Quem roda a
-cidade — obra nova, praça diferente, evento — não consegue anunciar.
+- **O ponto fixo** — roda entre 2 ou 3 lugares. O lugar tem nome ("Praça XV",
+  "portão da obra"), ele volta lá toda semana, e os clientes o esperam ali.
+- **O ambulante** — anda por uma região. Hoje é uma rua, amanhã são duas quadras
+  adiante. O lugar de hoje não tem nome que valha guardar.
 
-- **A) Só pontos salvos, teto de 3.** Funciona com a API de hoje, zero backend.
-  Quem se move não consegue anunciar sem apagar um ponto antigo.
-- **B) "Onde estou agora" cria um ponto temporário a cada chegada.** Atende o
-  vendedor de rua de verdade. Exige backend: tirar ou subir o teto de 3 e marcar
-  pontos temporários para limpeza automática.
-- **C) Manter os 3 e o app sobrescrever o menos usado.** Sem backend, mas apaga
-  um ponto salvo dele sem que ele entenda o porquê.
+**Não pergunte a ele qual dos dois ele é.** Ninguém se descreve como "ambulante
+móvel" às 10h30 com a caixa no braço, e muita gente é os dois em semanas
+diferentes. Uma tela de escolha de perfil aqui é uma pergunta que o app pode
+responder sozinho.
 
-**Recomendo B**, porque o produto se chama "marmita na rua" e três endereços fixos
-descrevem um restaurante, não um vendedor ambulante.
+### O mecanismo: um botão, o GPS decide
 
-**Se não responder:** entrego A agora (é o que a API permite hoje), com a
-contagem "3 de 3" visível antes de ele digitar, e abro a issue de backend para B.
+O botão é sempre `Cheguei`. O que muda é o que acontece embaixo dele:
+
+| Situação (pelo GPS) | O que o app faz | Toques |
+|---|---|---|
+| A menos de ~150 m de um ponto salvo | Já vem com aquele ponto escolhido: "Cheguei na Praça XV" | **1** |
+| Longe de qualquer ponto salvo | Anuncia onde ele está agora, sem pedir nome | **1** |
+| Entre dois pontos salvos próximos | Mostra os dois, o mais perto no topo | **2** |
+
+O vendedor fixo cai sempre na primeira linha. O ambulante cai sempre na segunda.
+Nenhum dos dois escolheu nada.
+
+### Os pontos salvos são conquistados, não cadastrados
+
+Quando ele anuncia do mesmo lugar pela **terceira vez**, o app pergunta uma única
+vez:
+
+> "Você já veio aqui 3 vezes. Quer salvar como ponto?"
+
+Ele dá o nome e aquele lugar vira um ponto fixo — com chegada de 1 toque dali em
+diante. Se ele ignorar, nunca mais é perguntado por aquele lugar.
+
+É assim que o vendedor fixo acaba com seus 2 ou 3 pontos nomeados **sem nunca
+abrir um formulário de cadastro**, e o ambulante nunca vê a tela de pontos nem
+esbarra no teto de 3.
+
+O cadastro manual em "Meus pontos" continua existindo, para quem quiser preparar
+tudo antes. Deixa de ser obrigatório.
+
+### O que isso custa no backend
+
+Menos do que parece. Hoje o teto de 3 (`SellingLocation#maximum_locations_per_seller`)
+conta **toda** linha de `selling_locations`, e `name` é `null: false`. Ou seja: o
+ambulante estoura o teto no quarto dia de uso.
+
+O necessário é uma coluna e um escopo:
+
+- `selling_locations.saved` (booleano, padrão `false`).
+- O teto de 3 passa a contar **só** `saved: true`. A intenção original do limite
+  — ninguém reivindicar 20 endereços fixos — fica preservada.
+- Anúncio avulso entra com `saved: false` e nome gerado do endereço reverso
+  ("Rua Augusta, 1200"), que o marmiteiro nunca vê nem digita. Promover a ponto
+  salvo é só marcar `saved: true` e trocar o nome.
+- Limpeza: apagar os `saved: false` com mais de 30 dias. Antes disso eles são o
+  que permite contar as 3 repetições.
+
+**Não precisa de endpoint novo.** O app faz `POST /seller/selling_locations`
+seguido de `POST /seller/selling_locations/:id/arrive` — duas chamadas, um toque
+para ele.
+
+### O limite honesto: o ambulante se move enquanto vende
+
+Um ponto marcado às 11h está errado às 12h se ele andou seis quadras. O produto
+promete "onde tem marmita agora" e vai entregar "onde tinha marmita há uma hora".
+
+Não há endpoint para atualizar a posição sem `leave` + `arrive`. O que dá para
+fazer já:
+
+- No app do marmiteiro, "atualizei onde estou" — por baixo, um anúncio avulso
+  novo.
+- No app do consumidor, mostrar **"chegou há 40 min"** junto da posição, para ele
+  calibrar sozinho a confiança.
+
+Rastrear a posição do ambulante de forma contínua é outra conversa — mexe em
+bateria, em privacidade e em endpoint novo. Fica registrado aqui como pergunta
+para depois, não como suposição desta issue.
 
 ---
 
@@ -376,7 +446,9 @@ contagem "3 de 3" visível antes de ele digitar, e abro a issue de backend para 
 1. Componentes compartilhados e tokens de `constants` — botão, campo, estado
    vazio, estado de erro, carregamento. Tudo abaixo depende disso.
 2. Gate "Virar marmiteiro" + troca "Comprando / Vendendo".
-3. Tela "Hoje" com Cheguei / Sai daqui (a parte que funciona hoje).
+3. Tela "Hoje" com Cheguei / Sai daqui, já com o GPS escolhendo entre ponto salvo
+   e anúncio avulso (§7). O caminho do ponto salvo funciona com a API de hoje; o
+   avulso liga junto com a coluna `saved` (§5, item 7).
 4. Meus pratos → Cardápio de hoje → Mandar no zap.
 5. Meus pontos.
 6. Avaliações do lado do consumidor.
