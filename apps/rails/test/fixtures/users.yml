@@ -19,6 +19,15 @@ carla:
   name: Carla Ferraz
   email: carla.ferraz@example.com
   phone: "21988119991"
+  # Unico usuario com `notification_preferences` escrito na fixture, e com
+  # valores diferentes do default da coluna. E o que o teste de regressao das
+  # colunas `jsonb` le: com o default do banco o teste passaria mesmo se a
+  # fixture nunca tivesse gravado nada.
+  notification_preferences:
+    new_menus: false
+    promotions: true
+    order_updates: true
+    seller_arrivals: false
 
 diego:
   <<: *DEFAULTS
