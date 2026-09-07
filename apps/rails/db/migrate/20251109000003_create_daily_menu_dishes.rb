@@ -11,7 +11,7 @@ class CreateDailyMenuDishes < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :daily_menu_dishes, [:daily_menu_id, :dish_id], unique: true
+    add_index :daily_menu_dishes, [ :daily_menu_id, :dish_id ], unique: true
     add_index :daily_menu_dishes, :display_order
   end
 end

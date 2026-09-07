@@ -8,6 +8,6 @@ class CreateReviewHelpfuls < ActiveRecord::Migration[8.1]
     end
 
     # Unique constraint: one helpful vote per user per review
-    add_index :review_helpfuls, [:review_id, :user_id], unique: true
+    add_index :review_helpfuls, [ :review_id, :user_id ], unique: true
   end
 end

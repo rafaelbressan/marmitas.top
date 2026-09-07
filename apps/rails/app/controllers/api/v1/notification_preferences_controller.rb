@@ -16,7 +16,7 @@ module Api
 
         if current_user.update(notification_preferences: preferences)
           render json: {
-            message: 'Notification preferences updated successfully',
+            message: "Notification preferences updated successfully",
             notification_preferences: current_user.notification_preferences
           }, status: :ok
         else

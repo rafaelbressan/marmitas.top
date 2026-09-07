@@ -1,7 +1,7 @@
 class Api::V1::ReviewsController < Api::V1::BaseController
-  before_action :set_seller_profile, only: [:index, :create]
-  before_action :set_review, only: [:show, :update, :destroy, :flag, :helpful]
-  before_action :authenticate_user!, except: [:index, :show]
+  before_action :set_seller_profile, only: [ :index, :create ]
+  before_action :set_review, only: [ :show, :update, :destroy, :flag, :helpful ]
+  before_action :authenticate_user!, except: [ :index, :show ]
 
   # GET /api/v1/sellers/:seller_profile_id/reviews
   def index
@@ -12,14 +12,14 @@ class Api::V1::ReviewsController < Api::V1::BaseController
 
     # Apply filters
     @reviews = @reviews.by_rating(params[:rating]) if params[:rating].present?
-    @reviews = @reviews.verified if params[:verified_only] == 'true'
-    @reviews = @reviews.with_comments if params[:with_comments] == 'true'
+    @reviews = @reviews.verified if params[:verified_only] == "true"
+    @reviews = @reviews.with_comments if params[:with_comments] == "true"
 
     # Apply sorting
     case params[:sort]
-    when 'helpful'
+    when "helpful"
       @reviews = @reviews.order(helpful_count: :desc)
-    when 'rating'
+    when "rating"
       @reviews = @reviews.order(rating: :desc)
     else
       @reviews = @reviews.order(created_at: :desc)
@@ -65,7 +65,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
 
     if @review.save
       render json: {
-        message: 'Avaliação criada com sucesso',
+        message: "Avaliação criada com sucesso",
         review: review_response(@review)
       }, status: :created
     else
@@ -76,7 +76,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
   # PATCH /api/v1/reviews/:id
   def update
     unless @review.editable_by?(current_user)
-      return render json: { error: 'Esta avaliação não pode ser editada' }, status: :forbidden
+      return render json: { error: "Esta avaliação não pode ser editada" }, status: :forbidden
     end
 
     if @review.update(review_update_params)
@@ -84,7 +84,7 @@ class Api::V1::ReviewsController < Api::V1::BaseController
       @review.update_column(:last_edited_at, Time.current)
 
       render json: {
-        message: 'Avaliação atualizada com sucesso',
+        message: "Avaliação atualizada com sucesso",
         review: review_response(@review)
       }
     else
@@ -95,11 +95,11 @@ class Api::V1::ReviewsController < Api::V1::BaseController
   # DELETE /api/v1/reviews/:id
   def destroy
     unless @review.editable_by?(current_user)
-      return render json: { error: 'Esta avaliação não pode ser removida' }, status: :forbidden
+      return render json: { error: "Esta avaliação não pode ser removida" }, status: :forbidden
     end
 
     @review.destroy
-    render json: { message: 'Avaliação removida com sucesso' }
+    render json: { message: "Avaliação removida com sucesso" }
   end
 
   # POST /api/v1/reviews/:id/flag
@@ -107,26 +107,26 @@ class Api::V1::ReviewsController < Api::V1::BaseController
     flag_reason = params[:reason].to_s.strip
 
     if flag_reason.blank?
-      return render json: { error: 'Motivo da denúncia é obrigatório' }, status: :unprocessable_entity
+      return render json: { error: "Motivo da denúncia é obrigatório" }, status: :unprocessable_entity
     end
 
     if @review.flag!(flag_reason, current_user)
-      render json: { message: 'Avaliação denunciada com sucesso. Nossa equipe irá analisá-la.' }
+      render json: { message: "Avaliação denunciada com sucesso. Nossa equipe irá analisá-la." }
     else
-      render json: { error: 'Não foi possível denunciar esta avaliação' }, status: :unprocessable_entity
+      render json: { error: "Não foi possível denunciar esta avaliação" }, status: :unprocessable_entity
     end
   end
 
   # POST /api/v1/reviews/:id/helpful
   def helpful
     if current_user.id == @review.user_id
-      return render json: { error: 'Você não pode marcar sua própria avaliação como útil' }, status: :forbidden
+      return render json: { error: "Você não pode marcar sua própria avaliação como útil" }, status: :forbidden
     end
 
     is_helpful = @review.toggle_helpful(current_user)
 
     render json: {
-      message: is_helpful ? 'Marcado como útil' : 'Desmarcado como útil',
+      message: is_helpful ? "Marcado como útil" : "Desmarcado como útil",
       helpful_count: @review.helpful_count,
       is_helpful: is_helpful
     }
