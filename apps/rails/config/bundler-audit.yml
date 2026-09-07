@@ -1,5 +1,17 @@
-# Audit all gems listed in the Gemfile for known security problems by running bin/bundler-audit.
-# CVEs that are not relevant to the application can be enumerated on the ignore list below.
-
+---
+# Avisos ignorados. Toda entrada precisa de justificativa escrita: por que nao da
+# para atualizar, e por que o aviso nao atinge este app.
+#
+# devise 4.9.4 e a ultima versao da serie 4.x. Os dois avisos abaixo so tem
+# correcao no devise 5.x, e o devise-jwt 0.12.1 declara `devise (~> 4.0)` — ou
+# seja, o bundler nao resolve devise 5 enquanto o devise-jwt nao suportar.
+# Nenhum dos dois avisos atinge este app: o `User` habilita apenas
+# database_authenticatable, registerable, recoverable, rememberable, validatable
+# e jwt_authenticatable. Nem :confirmable nem :timeoutable estao ligados.
+#
+# Sai daqui quando o devise-jwt suportar devise 5: BRES-135.
 ignore:
-  - CVE-THAT-DOES-NOT-APPLY
+  # Race na confirmacao de troca de e-mail. Depende de :confirmable, desligado.
+  - GHSA-57hq-95w6-v4fc
+  # Open redirect via request.referrer no Timeoutable. Depende de :timeoutable, desligado.
+  - GHSA-jp94-3292-c3xv

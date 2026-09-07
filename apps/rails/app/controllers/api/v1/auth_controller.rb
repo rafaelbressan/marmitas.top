@@ -1,7 +1,7 @@
 module Api
   module V1
     class AuthController < BaseController
-      skip_before_action :authenticate_user!, only: [:register, :login]
+      skip_before_action :authenticate_user!, only: [ :register, :login ]
 
       # POST /api/v1/auth/register
       def register
@@ -10,7 +10,7 @@ module Api
         if user.save
           token = generate_jwt(user)
           render json: {
-            message: 'Registration successful',
+            message: "Registration successful",
             user: user_response(user),
             token: token
           }, status: :created
@@ -26,19 +26,19 @@ module Api
         if user&.valid_password?(login_params[:password])
           token = generate_jwt(user)
           render json: {
-            message: 'Login successful',
+            message: "Login successful",
             user: user_response(user),
             token: token
           }, status: :ok
         else
-          render json: { error: 'Invalid email or password' }, status: :unauthorized
+          render json: { error: "Invalid email or password" }, status: :unauthorized
         end
       end
 
       # DELETE /api/v1/auth/logout
       def logout
         # JWT will be revoked by devise-jwt automatically
-        render json: { message: 'Logged out successfully' }, status: :ok
+        render json: { message: "Logged out successfully" }, status: :ok
       end
 
       # GET /api/v1/auth/me
