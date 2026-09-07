@@ -69,7 +69,7 @@ module Api
           description: menu.description,
           available_from: menu.available_from,
           available_until: menu.available_until,
-          dishes_count: menu.weekly_menu_dishes.count,
+          dishes_count: menu.weekly_menu_dishes.kept.count,
           total_available_quantity: menu.total_available_quantity,
           seller: {
             id: seller.id,

@@ -68,7 +68,10 @@ class DiscardCascadeTest < ActiveSupport::TestCase
 
     assert_equal 25, baixa.available_quantity
     assert_equal 0, baixa.remaining_quantity
-    assert_equal 3, WeeklyMenuDish.joins(:dish).where(dishes: { seller_profile: @marli }).count
+    linhas_do_dia = WeeklyMenuDish.joins(:dish).where(dishes: { seller_profile: @marli })
+
+    assert_equal 3, linhas_do_dia.count
+    assert_equal 3, linhas_do_dia.kept.count, "a cascata descartou o registro do dia"
   end
 
   test "undiscard devolve exatamente o que caiu na cascata" do

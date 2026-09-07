@@ -517,7 +517,8 @@ CREATE TABLE public.weekly_menu_dishes (
     price_override numeric(10,2),
     display_order integer DEFAULT 0,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    discarded_at timestamp(6) without time zone
 );
 
 
@@ -1120,6 +1121,13 @@ CREATE INDEX index_users_on_role ON public.users USING btree (role);
 
 
 --
+-- Name: index_weekly_menu_dishes_on_discarded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_weekly_menu_dishes_on_discarded_at ON public.weekly_menu_dishes USING btree (discarded_at);
+
+
+--
 -- Name: index_weekly_menu_dishes_on_dish_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1134,17 +1142,17 @@ CREATE INDEX index_weekly_menu_dishes_on_display_order ON public.weekly_menu_dis
 
 
 --
+-- Name: index_weekly_menu_dishes_on_menu_and_dish_kept; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_weekly_menu_dishes_on_menu_and_dish_kept ON public.weekly_menu_dishes USING btree (weekly_menu_id, dish_id) WHERE (discarded_at IS NULL);
+
+
+--
 -- Name: index_weekly_menu_dishes_on_weekly_menu_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_weekly_menu_dishes_on_weekly_menu_id ON public.weekly_menu_dishes USING btree (weekly_menu_id);
-
-
---
--- Name: index_weekly_menu_dishes_on_weekly_menu_id_and_dish_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_weekly_menu_dishes_on_weekly_menu_id_and_dish_id ON public.weekly_menu_dishes USING btree (weekly_menu_id, dish_id);
 
 
 --
@@ -1332,6 +1340,7 @@ ALTER TABLE ONLY public.seller_profiles
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260907234500'),
 ('20260907230000'),
 ('20251114144337'),
 ('20251114144317'),

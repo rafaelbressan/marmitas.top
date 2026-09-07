@@ -1,4 +1,8 @@
 class WeeklyMenuDish < ApplicationRecord
+  # Tirar um prato do cardapio nao apaga a baixa daquele dia: descarta a linha e
+  # ela continua no banco (BRES-140).
+  include Discard::Model
+
   # Associations
   belongs_to :weekly_menu
   belongs_to :dish
@@ -6,7 +10,13 @@ class WeeklyMenuDish < ApplicationRecord
   # Validations
   validates :available_quantity, presence: true, numericality: { greater_than: 0 }
   validates :remaining_quantity, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :dish_id, uniqueness: { scope: :weekly_menu_id, message: "already added to this menu" }
+  # `kept`: a linha descartada de um prato que saiu do cardapio nao impede
+  # recoloca-lo. O indice unico parcial no banco diz a mesma coisa.
+  validates :dish_id, uniqueness: {
+    scope: :weekly_menu_id,
+    conditions: -> { kept },
+    message: "already added to this menu"
+  }
   validate :remaining_not_greater_than_available
 
   # Callbacks
@@ -14,10 +24,9 @@ class WeeklyMenuDish < ApplicationRecord
 
   # Scopes
   scope :available, -> { where("remaining_quantity > 0") }
-  # A vitrine so mostra prato vivo. O painel do marmiteiro nao usa este escopo de
-  # proposito: la a linha e o registro do dia, com o quanto foi anunciado e o
-  # quanto sobrou, e some-la esconderia a baixa (BRES-140).
-  scope :with_kept_dish, -> { joins(:dish).merge(Dish.kept) }
+  # A vitrine so mostra prato vivo — o prato pode ter sido descartado depois de
+  # entrar num cardapio que ainda nao tinha comecado.
+  scope :with_kept_dish, -> { kept.joins(:dish).merge(Dish.kept) }
   scope :ordered, -> { order(:display_order, :created_at) }
 
   # Get effective price (override or base price)

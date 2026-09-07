@@ -100,6 +100,34 @@ class Api::V1::DiscardTest < ActionDispatch::IntegrationTest
     assert_equal 3, WeeklyMenuDish.joins(:dish).where(dishes: { seller_profile: @marli }).count
   end
 
+  # Tirar um prato do cardapio nao pode apagar a baixa daquele dia.
+  test "remove_dish descarta a linha do dia e deixa recolocar o mesmo prato" do
+    menu = weekly_menus(:marli_semana_atual)
+    linha = weekly_menu_dishes(:marli_feijoada)
+
+    delete "/api/v1/seller/weekly_menus/#{menu.id}/remove_dish/#{dishes(:feijoada).id}",
+           headers: @headers
+
+    assert_response :ok
+    assert_equal 1, linhas("weekly_menu_dishes", "id = #{linha.id}")
+    assert_predicate linha.reload, :discarded?
+    assert_equal 20, linha.available_quantity
+    assert_equal 8, linha.remaining_quantity
+
+    get "/api/v1/seller/weekly_menus/#{menu.id}", headers: @headers
+    assert_equal [ dishes(:frango_grelhado).id ],
+                 json_response.dig("menu", "dishes").map { |d| d["dish_id"] }
+
+    # O indice unico do banco e parcial: a linha descartada nao trava a volta.
+    post "/api/v1/seller/weekly_menus/#{menu.id}/add_dish",
+         params: { dish_id: dishes(:feijoada).id, available_quantity: 12 },
+         headers: @headers
+
+    assert_response :ok
+    assert_equal 2, menu.weekly_menu_dishes.kept.count
+    assert_equal 3, linhas("weekly_menu_dishes", "weekly_menu_id = #{menu.id}")
+  end
+
   test "DELETE de cardapio fechado descarta e mantem a linha" do
     menu = weekly_menus(:marli_semana_passada)
 

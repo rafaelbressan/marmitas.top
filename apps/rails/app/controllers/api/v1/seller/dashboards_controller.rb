@@ -124,7 +124,7 @@ module Api
 
           return { menu: nil, announced_quantity: 0, remaining_quantity: 0, sold_quantity: 0, dishes: [] } unless menu
 
-          menu_dishes = menu.weekly_menu_dishes.ordered.includes(:dish).to_a
+          menu_dishes = menu.weekly_menu_dishes.kept.ordered.includes(:dish).to_a
           announced = menu_dishes.sum(&:available_quantity)
           remaining = menu_dishes.sum(&:remaining_quantity)
 

@@ -41,12 +41,12 @@ class WeeklyMenu < ApplicationRecord
 
   # Check if menu has any dishes
   def has_dishes?
-    weekly_menu_dishes.any?
+    weekly_menu_dishes.kept.any?
   end
 
   # Get total available quantity across all dishes
   def total_available_quantity
-    weekly_menu_dishes.sum(:remaining_quantity)
+    weekly_menu_dishes.kept.sum(:remaining_quantity)
   end
 
   # Duplicate menu for future use
@@ -62,7 +62,7 @@ class WeeklyMenu < ApplicationRecord
       new_menu.save!
 
       # Duplicate all dishes with their quantities
-      weekly_menu_dishes.each do |menu_dish|
+      weekly_menu_dishes.kept.each do |menu_dish|
         new_menu.weekly_menu_dishes.create!(
           dish_id: menu_dish.dish_id,
           available_quantity: menu_dish.available_quantity,
@@ -80,7 +80,7 @@ class WeeklyMenu < ApplicationRecord
   def whatsapp_message
     message = "🍱 *#{title || 'Cardápio da Semana'}* - #{seller_profile.business_name}\n\n"
 
-    weekly_menu_dishes.order(:display_order).each do |menu_dish|
+    weekly_menu_dishes.kept.order(:display_order).each do |menu_dish|
       dish = menu_dish.dish
       price = menu_dish.price_override || dish.base_price
       message += "*#{dish.name}*\n"
