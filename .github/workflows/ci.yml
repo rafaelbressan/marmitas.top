@@ -88,13 +88,15 @@ jobs:
         options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
+      # O checkout vem antes do apt: `defaults.run.working-directory` aponta para
+      # `apps/rails`, que so existe depois que o repositorio esta no disco.
+      - name: Checkout code
+        uses: actions/checkout@v5
+
       - name: Install packages
         # `psql` carrega o `db/structure.sql` (schema_format :sql) e precisa ser
         # da mesma serie do servidor: 16.
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips postgresql-client
-
-      - name: Checkout code
-        uses: actions/checkout@v5
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
