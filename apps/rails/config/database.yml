@@ -46,10 +46,9 @@ production:
     <<: *primary_production
     database: backend_production_cache
     migrations_paths: db/cache_migrate
-  queue:
-    <<: *primary_production
-    database: backend_production_queue
-    migrations_paths: db/queue_migrate
+  # Sem entrada `queue`: as tabelas do Solid Queue estao no banco principal,
+  # criadas por migration, porque o schema aqui e versionado em SQL e o
+  # carregador multi-banco do Rails nao le um `queue_schema.rb` nesse modo.
   cable:
     <<: *primary_production
     database: backend_production_cable

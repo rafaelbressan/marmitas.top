@@ -20,6 +20,14 @@ gem "solid_cache"
 gem "solid_queue"
 gem "solid_cable"
 
+# json 3.0 removeu o hash posicional de `JSON.parse(source, options)`, e o
+# `ActiveSupport::JSON.decode` do Rails 8.1.3 ainda chama exatamente assim. Com
+# json 3.0 instalado, ler qualquer coluna jsonb (`seller_profiles.operating_hours`,
+# `dishes.dietary_tags`, `users.notification_preferences`) levanta
+# `ArgumentError: wrong number of arguments`. Solta o pino quando o Rails corrigir
+# a chamada.
+gem "json", "< 3.0"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 

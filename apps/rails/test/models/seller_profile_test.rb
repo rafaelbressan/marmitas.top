@@ -8,14 +8,17 @@ class SellerProfileTest < ActiveSupport::TestCase
   CATETE = { latitude: -22.929500, longitude: -43.177400 }.freeze
 
   test "as fixtures de ponto de venda chegam ao banco com a coluna geography preenchida" do
-    assert_equal 4, SellingLocation.count
-    assert_equal 4, SellingLocation.where.not(lonlat: nil).count
+    assert_equal 6, SellingLocation.count
+    assert_equal 6, SellingLocation.where.not(lonlat: nil).count
   end
 
   test "nearby encontra o marmiteiro que esta anunciando por perto" do
     encontrados = SellerProfile.nearby(CATETE[:latitude], CATETE[:longitude], 5)
 
-    assert_equal [ seller_profiles(:marli_marmitas) ], encontrados.to_a
+    # A Marli esta num ponto fixo e a Neide circulando: as duas dizem a mesma
+    # frase, "estou aberta", e as duas tem que sair na mesma consulta PostGIS.
+    assert_equal [ seller_profiles(:marli_marmitas), seller_profiles(:neide_ambulante) ],
+                 encontrados.to_a
   end
 
   test "nearby calcula a distancia em quilometros a partir do ponto buscado" do

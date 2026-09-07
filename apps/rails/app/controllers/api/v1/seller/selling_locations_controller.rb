@@ -2,11 +2,14 @@ module Api
   module V1
     module Seller
       class SellingLocationsController < BaseController
-        before_action :set_location, only: [ :show, :update, :destroy, :arrive, :leave ]
+        before_action :set_ponto, only: [ :show, :update, :destroy ]
+        before_action :set_location, only: [ :arrive, :leave ]
 
         # GET /api/v1/seller/selling_locations
         def index
-          @locations = current_user.seller_profile.selling_locations.order(created_at: :asc)
+          # A linha "circulando" e posicao ao vivo, nao um lugar salvo: fica
+          # fora da lista de pontos e do limite de 3.
+          @locations = current_user.seller_profile.selling_locations.pontos.order(created_at: :asc)
 
           render json: {
             locations: @locations.map { |location| location_response(location) }
@@ -105,8 +108,16 @@ module Api
 
         private
 
+        # arrive/leave valem tambem para o turno do ambulante, entao aqui a linha
+        # "circulando" e alcancavel.
         def set_location
           @location = current_user.seller_profile.selling_locations.find(params[:id])
+        rescue ActiveRecord::RecordNotFound
+          render json: { error: "Location not found" }, status: :not_found
+        end
+
+        def set_ponto
+          @location = current_user.seller_profile.selling_locations.pontos.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: "Location not found" }, status: :not_found
         end
@@ -146,6 +157,7 @@ module Api
             latitude: location.latitude&.to_f,
             longitude: location.longitude&.to_f,
             notes: location.notes,
+            kind: location.kind,
             is_current: current_user.seller_profile.current_location_id == location.id,
             created_at: location.created_at,
             updated_at: location.updated_at
