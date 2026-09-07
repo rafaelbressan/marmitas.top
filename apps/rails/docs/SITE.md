@@ -172,17 +172,27 @@ published`, que o model já garante.
 Ele se cadastrou num **app**. Ninguém combinou com ele que existiria uma página
 dele na internet aberta. Publicar sem dizer é errado mesmo que ajude a vender.
 
-Duas coisas, e nenhuma delas é opcional:
+**A página nasce ligada** — `seller_profiles.public_page`, `default: true`
+(decisão do Rafael em 07/09/2026, §8). Quem é publicado por padrão precisa ser
+avisado por padrão, então as três coisas abaixo entram **junto** com a coluna, no
+mesmo PR. Nenhuma é opcional.
 
-1. Uma chave `seller_profiles.public_page` que ele controla no app, com o texto
-   "Quero minha página na internet — quem procurar marmita no Google te acha"
-   e um link para ver a própria página. `false` tira do sitemap, tira do índice
-   (`noindex`) e responde `404` na URL.
-2. Uma página `/privacidade/o-que-aparece-de-voce` escrita em português comum,
-   com a lista do §3.2 item a item. É a página que se manda para o marmiteiro
-   que pergunta "o que aparece de mim aí?".
+1. **O aviso no cadastro**, uma frase na tela de "Quero vender marmita":
 
-O valor padrão dessa chave é a decisão do §8.
+   > Sua página vai para a internet, e quem procurar marmita no Google te acha.
+   > A rua onde você está agora não vai. Você pode desligar quando quiser.
+
+2. **A chave no perfil, visível** — não escondida em "configurações avançadas":
+
+   > **Minha página na internet**
+   > Ligada · [Ver minha página] · [Desligar]
+
+   Desligada: sai do `sitemap.xml`, ganha `noindex` e a URL responde `404`. Sem
+   meio-termo e sem página fantasma com "este marmiteiro saiu".
+
+3. **A página `/privacidade/o-que-aparece-de-voce`**, em português comum, com a
+   lista do §3.2 item a item. É o link que se manda para o marmiteiro que
+   pergunta "o que aparece de mim aí?".
 
 ### 3.6 A trava que o site precisa fazer sozinho
 
@@ -579,8 +589,8 @@ Cada item aqui é issue de backend, não suposição minha. Os quatro primeiros
 
 3. **Não existe consentimento de página pública.** Nada no schema diz que o
    marmiteiro concordou em ter uma página na internet aberta.
-   **Falta:** `seller_profiles.public_page` (booleano) e o controle no app. Ver a
-   decisão do §8.
+   **Falta:** `seller_profiles.public_page` (booleano, `default: true` — §8), o
+   controle no perfil e o aviso no cadastro, tudo no mesmo PR (§3.5).
 
 4. **Ninguém é `verified`, e não existe como verificar.** `verified` nasce
    `false` (migration `20251107212103`) e toda a descoberta filtra por ele; o
@@ -628,22 +638,25 @@ Cada item aqui é issue de backend, não suposição minha. Os quatro primeiros
 
 ---
 
-## 8. A decisão que depende do Rafael
+## 8. A decisão, tomada
 
-**Decisão:** a página pública do marmiteiro nasce ligada ou desligada?
+**A página pública do marmiteiro nasce ligada**, com chave para desligar no app.
+Rafael, 07/09/2026.
 
-- **A)** Ligada por padrão, com chave para desligar no app — todo marmiteiro
-  ganha página e o Google acha; quem não quiser, desliga.
-- **B)** Desligada por padrão, ele liga no app — ninguém é publicado sem dizer
-  sim; o site começa quase vazio e demora a ter SEO.
+Todo marmiteiro que se cadastra ganha página e é achável no Google — que é o
+motivo pelo qual ele se cadastrou. Quem não quiser, desliga em um toque.
 
-**Recomendo:** A, porque o marmiteiro se cadastra justamente para ser achado, e
-uma página que ninguém liga não traz freguesia para ninguém — mas só com as duas
-travas: o aviso no cadastro, em uma frase ("sua página vai para a internet, e a
-rua onde você está agora não"), e a chave de desligar visível no perfil, não
-escondida.
+O que isso obriga, e que não é negociável junto com a decisão:
 
-**Se não responder:** sigo com A.
+- o aviso no cadastro, antes de existir página (§3.5, item 1);
+- a chave visível no perfil, com link para ver a própria página (§3.5, item 2);
+- `/privacidade/o-que-aparece-de-voce` no ar **antes** do primeiro `sitemap.xml`.
+  Publicar primeiro e explicar depois é a ordem errada.
+
+Um marmiteiro que já existe hoje no banco vira `public_page = true` na migration.
+Ele também não combinou nada — então o aviso do item 1 tem que aparecer para ele
+na primeira vez que abrir o app depois disso, não só para quem se cadastrar
+daqui para frente.
 
 ---
 
