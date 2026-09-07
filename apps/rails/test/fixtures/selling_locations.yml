@@ -40,3 +40,25 @@ benedito_calixto:
   longitude: -46.685500
   lonlat: "SRID=4326;POINT(-46.6855 -23.5605)"
   notes: Sabado de manha na feira.
+
+# A linha do ambulante. `kind: circulando`, uma por marmiteiro, regravada pelo
+# PUT /api/v1/seller/position. ~300 m do Largo do Machado.
+neide_circulando:
+  seller_profile: neide_ambulante
+  name: Circulando
+  kind: circulando
+  latitude: -22.927000
+  longitude: -43.178000
+  lonlat: "SRID=4326;POINT(-43.178 -22.927)"
+  position_updated_at: <%= 2.minutes.ago.to_fs(:db) %>
+
+# ~3,4 km do Largo do Machado: cai dentro do raio de 5 km, mas o turno do Tiao
+# venceu ha 8 horas.
+praca_da_bandeira:
+  seller_profile: tiao_vencido
+  name: Praca da Bandeira
+  address: Praca da Bandeira, Rio de Janeiro
+  latitude: -22.912000
+  longitude: -43.205000
+  lonlat: "SRID=4326;POINT(-43.205 -22.912)"
+  notes: De segunda a sexta, 11h as 14h.

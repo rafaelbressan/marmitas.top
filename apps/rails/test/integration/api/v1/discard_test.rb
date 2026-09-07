@@ -38,10 +38,10 @@ class Api::V1::DiscardTest < ActionDispatch::IntegrationTest
     assert_not_includes json_response["sellers"].map { |s| s["id"] }, @marli.id
 
     get "/api/v1/sellers/nearby", params: { latitude: -22.9295, longitude: -43.1774, radius: 5 }
-    assert_equal [], json_response["sellers"].to_a
+    assert_not_includes json_response["sellers"].map { |s| s["id"] }, @marli.id
 
     get "/api/v1/map/sellers", params: { latitude: -22.9295, longitude: -43.1774, radius: 5 }
-    assert_equal [], json_response["features"].to_a
+    assert_not_includes json_response["features"].map { |f| f.dig("properties", "id") }, @marli.id
 
     # Painel: o proprio dono nao ve mais o perfil.
     get "/api/v1/seller/profile", headers: @headers

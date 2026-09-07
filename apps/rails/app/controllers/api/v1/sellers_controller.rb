@@ -80,7 +80,7 @@ module Api
       def apply_filters(scope)
         scope = scope.where(city: params[:city]) if params[:city].present?
         scope = scope.where("average_rating >= ?", params[:min_rating]) if params[:min_rating].present?
-        scope = scope.where(currently_active: true) if params[:active_only] == "true"
+        scope = scope.broadcasting if params[:active_only] == "true"
         scope
       end
 
@@ -96,7 +96,7 @@ module Api
           followers_count: seller.followers_count,
           favorites_count: seller.favorites_count,
           verified: seller.verified,
-          currently_active: seller.currently_active,
+          currently_active: seller.broadcasting?,
           has_current_menu: seller.current_menu.present?
         }
 
@@ -106,7 +106,7 @@ module Api
         end
 
         # Include current location for map display
-        if seller.current_location.present?
+        if live_position_visible?(seller.current_location)
           summary[:current_location] = {
             id: seller.current_location.id,
             name: seller.current_location.name,
@@ -135,13 +135,15 @@ module Api
           followers_count: seller.followers_count,
           favorites_count: seller.favorites_count,
           verified: seller.verified,
-          currently_active: seller.currently_active,
+          currently_active: seller.broadcasting?,
           last_active_at: seller.last_active_at,
           arrived_at: seller.arrived_at,
           leaving_at: seller.leaving_at,
           current_menu: seller.current_menu ? menu_summary(seller.current_menu) : nil,
-          current_location: seller.current_location ? location_summary(seller.current_location) : nil,
-          selling_locations: seller.selling_locations.kept.map { |loc| location_summary(loc) }
+          current_location: live_position_visible?(seller.current_location) ? location_summary(seller.current_location) : nil,
+          # So os pontos salvos. A linha "circulando" e posicao ao vivo, nao um
+          # lugar publicado.
+          selling_locations: seller.selling_locations.kept.pontos.map { |loc| location_summary(loc) }
         }
         detail[:is_favorited] = current_user.favorited?(seller) if current_user.present?
         detail

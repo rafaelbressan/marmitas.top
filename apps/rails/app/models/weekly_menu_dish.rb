@@ -49,6 +49,36 @@ class WeeklyMenuDish < ApplicationRecord
     end
   end
 
+  # Baixa de estoque do dia ("vendi 3 agora").
+  #
+  # A subtracao acontece dentro do UPDATE, com a guarda no proprio WHERE: duas
+  # baixas simultaneas nunca passam do estoque porque a segunda enxerga o valor
+  # ja gravado pela primeira, e nao um numero lido antes em Ruby.
+  #
+  # Devolve true quando a baixa foi aplicada, false quando nao havia saldo.
+  def sell!(amount)
+    amount = Integer(amount)
+    raise ArgumentError, "amount must be positive" unless amount.positive?
+
+    updated = self.class
+                  .where(id: id)
+                  .where("remaining_quantity >= ?", amount)
+                  .update_all([
+                    "remaining_quantity = remaining_quantity - ?, updated_at = ?",
+                    amount, Time.current
+                  ])
+
+    reload
+    updated == 1
+  end
+
+  # Ajuste absoluto ("sobraram 5", "acabou" = 0). Caso distinto da baixa: aqui o
+  # marmiteiro diz quanto sobrou, nao quanto saiu.
+  def set_remaining!(quantity)
+    quantity = Integer(quantity)
+    update!(remaining_quantity: quantity)
+  end
+
   # Increase remaining quantity (e.g., order cancelled)
   def increase_quantity!(amount = 1)
     new_quantity = remaining_quantity + amount
