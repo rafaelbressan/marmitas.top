@@ -6,7 +6,7 @@ module Api
 
         # GET /api/v1/seller/weekly_menus
         def index
-          @menus = current_user.seller_profile.weekly_menus.order(available_from: :desc)
+          @menus = current_user.seller_profile.weekly_menus.kept.order(available_from: :desc)
 
           # Filter by status
           @menus = case params[:status]
@@ -68,13 +68,13 @@ module Api
             }, status: :unprocessable_entity
           end
 
-          @menu.destroy
+          @menu.discard
           render json: { message: "Daily menu deleted successfully" }, status: :ok
         end
 
         # POST /api/v1/seller/weekly_menus/:id/add_dish
         def add_dish
-          dish = current_user.seller_profile.dishes.find(params[:dish_id])
+          dish = current_user.seller_profile.dishes.kept.find(params[:dish_id])
 
           menu_dish = @menu.weekly_menu_dishes.build(
             dish: dish,
@@ -141,7 +141,7 @@ module Api
         private
 
         def set_menu
-          @menu = current_user.seller_profile.weekly_menus.find(params[:id])
+          @menu = current_user.seller_profile.weekly_menus.kept.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: "Menu not found" }, status: :not_found
         end

@@ -1,4 +1,8 @@
 class WeeklyMenu < ApplicationRecord
+  # Substitui o soft delete artesanal que este modelo tinha em `deleted_at`
+  # (BRES-140). `kept` e `discard` vem do gem, iguais aos dos outros modelos.
+  include Discard::Model
+
   # Associations
   belongs_to :seller_profile
   has_many :weekly_menu_dishes, dependent: :destroy
@@ -10,51 +14,25 @@ class WeeklyMenu < ApplicationRecord
   validates :available_until, presence: true
   validate :available_until_after_available_from
 
-  # Soft delete scopes
-  scope :not_deleted, -> { where(deleted_at: nil) }
-  scope :deleted, -> { where.not(deleted_at: nil) }
-
   # Scopes
-  scope :active, -> { where(active: true).not_deleted }
+  scope :active, -> { where(active: true).kept }
   scope :for_seller, ->(seller_profile_id) { where(seller_profile_id: seller_profile_id) }
   scope :available_now, -> {
     where("available_from <= ? AND available_until >= ?", Time.current, Time.current)
       .where(active: true)
-      .not_deleted
+      .kept
   }
   scope :upcoming, -> {
     where("available_from > ?", Time.current)
       .where(active: true)
-      .not_deleted
+      .kept
       .order(available_from: :asc)
   }
   scope :past, -> {
     where("available_until < ?", Time.current)
-      .not_deleted
+      .kept
       .order(available_from: :desc)
   }
-
-  # Soft delete methods
-  def soft_delete
-    update_column(:deleted_at, Time.current)
-  end
-
-  def restore!
-    update_column(:deleted_at, nil)
-  end
-
-  def deleted?
-    deleted_at.present?
-  end
-
-  # Override destroy to use soft delete
-  def destroy
-    soft_delete
-  end
-
-  def destroy!
-    soft_delete || raise(ActiveRecord::RecordNotDestroyed.new("Failed to destroy the record", self))
-  end
 
   # Check if menu is currently available
   def available?
@@ -78,6 +56,7 @@ class WeeklyMenu < ApplicationRecord
     new_menu.available_until = new_available_until || (available_until + 1.week)
     new_menu.total_orders_count = 0
     new_menu.active = false # Keep duplicated menu inactive by default
+    new_menu.discarded_at = nil # `dup` copia a coluna; a copia nasce viva
 
     transaction do
       new_menu.save!

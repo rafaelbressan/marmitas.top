@@ -35,6 +35,19 @@ gem "image_processing", "~> 1.2"
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 gem "rack-cors"
 
+# `json` fica preso na serie 2.x: o `ActiveSupport::JSON.decode` do Rails 8.1
+# passa as opcoes como argumento posicional para `JSON.parse`, e o json 3.0
+# so aceita palavra-chave. Numa maquina com o json 3 instalado, ler qualquer
+# coluna jsonb (`operating_hours`, `dietary_tags`) estoura ArgumentError e o
+# endpoint responde 500. O `json` e default gem e nao estava no lock, entao a
+# versao usada dependia da maquina.
+gem "json", "~> 2.7"
+
+# Soft deletion (discarded_at). Ver BRES-140: nada e apagado do banco — deletar
+# no produto e descartar, e a cascata desce pela arvore de dono. Mesmo gem e
+# mesma invariante do egerian.
+gem "discard", "~> 2.0"
+
 # Authentication & Authorization
 gem "devise", "~> 4.9"
 gem "devise-jwt", "~> 0.12"

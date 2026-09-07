@@ -93,12 +93,14 @@ class Api::V1::ReviewsController < Api::V1::BaseController
   end
 
   # DELETE /api/v1/reviews/:id
+  #
+  # Descarta, nao apaga: a avaliacao sai da API e continua no banco.
   def destroy
     unless @review.editable_by?(current_user)
       return render json: { error: "Esta avaliação não pode ser removida" }, status: :forbidden
     end
 
-    @review.destroy
+    @review.discard
     render json: { message: "Avaliação removida com sucesso" }
   end
 
@@ -135,11 +137,11 @@ class Api::V1::ReviewsController < Api::V1::BaseController
   private
 
   def set_seller_profile
-    @seller_profile = SellerProfile.find(params[:seller_id] || params[:seller_profile_id])
+    @seller_profile = SellerProfile.kept.find(params[:seller_id] || params[:seller_profile_id])
   end
 
   def set_review
-    @review = Review.find(params[:id])
+    @review = Review.kept.find(params[:id])
   end
 
   def review_params

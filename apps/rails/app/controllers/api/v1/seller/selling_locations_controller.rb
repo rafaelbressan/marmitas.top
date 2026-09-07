@@ -6,7 +6,7 @@ module Api
 
         # GET /api/v1/seller/selling_locations
         def index
-          @locations = current_user.seller_profile.selling_locations.order(created_at: :asc)
+          @locations = current_user.seller_profile.selling_locations.kept.order(created_at: :asc)
 
           render json: {
             locations: @locations.map { |location| location_response(location) }
@@ -57,7 +57,7 @@ module Api
             }, status: :unprocessable_entity
           end
 
-          @location.destroy
+          @location.discard
           render json: { message: "Selling location deleted successfully" }, status: :ok
         end
 
@@ -106,7 +106,7 @@ module Api
         private
 
         def set_location
-          @location = current_user.seller_profile.selling_locations.find(params[:id])
+          @location = current_user.seller_profile.selling_locations.kept.find(params[:id])
         rescue ActiveRecord::RecordNotFound
           render json: { error: "Location not found" }, status: :not_found
         end

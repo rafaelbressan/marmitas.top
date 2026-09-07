@@ -1,4 +1,7 @@
 class SellerProfile < ApplicationRecord
+  # Descartar um marmiteiro desce por toda a arvore de dono (BRES-140).
+  include Discard::Model
+
   # Broadcast duration constants (configurable business logic)
   DEFAULT_BROADCAST_DURATION = 12.hours
   MAX_BROADCAST_DURATION = 96.hours
@@ -23,6 +26,15 @@ class SellerProfile < ApplicationRecord
   validates :business_name, presence: true
   validates :user_id, uniqueness: true
   validate :leaving_at_within_max_duration, if: -> { leaving_at.present? && arrived_at.present? }
+
+  # Tudo o que o marmiteiro e dono e cai junto no `discard` — e volta junto no
+  # `undiscard`. `weekly_menu_dishes` fica de fora de proposito: e o registro de
+  # quanto saiu naquele dia, e nao pertence a arvore de exibicao.
+  OWNED_ASSOCIATIONS = %i[dishes weekly_menus selling_locations reviews].freeze
+
+  # Callbacks de cascata
+  after_discard :discard_owned_records
+  after_undiscard :undiscard_owned_records
 
   # Scopes
   scope :verified, -> { where(verified: true) }
@@ -219,6 +231,30 @@ class SellerProfile < ApplicationRecord
   end
 
   private
+
+  # Os filhos recebem exatamente o `discarded_at` do perfil. E o que permite ao
+  # `undiscard` devolver so o que caiu por causa desta cascata, sem ressuscitar
+  # um prato que o proprio marmiteiro tinha descartado antes.
+  #
+  # `update_all` de proposito: nenhum dos filhos tem callback de discard, e
+  # escrever um a um dispararia `Review#update_seller_rating` uma vez por
+  # avaliacao para recalcular uma nota que ninguem mais vai ler.
+  def discard_owned_records
+    each_owned_relation { |relation| relation.kept.update_all(discarded_at: discarded_at) }
+  end
+
+  def undiscard_owned_records
+    discarded_when = discarded_at_previously_was
+    return if discarded_when.blank?
+
+    each_owned_relation do |relation|
+      relation.where(discarded_at: discarded_when).update_all(discarded_at: nil)
+    end
+  end
+
+  def each_owned_relation
+    OWNED_ASSOCIATIONS.each { |name| yield public_send(name) }
+  end
 
   def set_no_rating
     update_columns(

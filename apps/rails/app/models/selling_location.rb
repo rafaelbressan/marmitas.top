@@ -1,4 +1,6 @@
 class SellingLocation < ApplicationRecord
+  include Discard::Model
+
   # Associations
   belongs_to :seller_profile
   has_many :seller_profiles_using, class_name: "SellerProfile", foreign_key: :current_location_id, dependent: :nullify
@@ -47,7 +49,8 @@ class SellingLocation < ApplicationRecord
   private
 
   def maximum_locations_per_seller
-    if seller_profile.selling_locations.count >= 3
+    # `kept`: um ponto descartado nao ocupa uma das tres vagas.
+    if seller_profile.selling_locations.kept.count >= 3
       errors.add(:base, "Cannot have more than 3 selling locations")
     end
   end

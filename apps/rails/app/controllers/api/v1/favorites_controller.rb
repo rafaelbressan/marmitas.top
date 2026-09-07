@@ -5,18 +5,18 @@ module Api
 
       # GET /api/v1/favorites
       def index
-        @favorites = current_user.favorites.includes(:favoritable).order(created_at: :desc)
+        @favorites = current_user.favorites.kept_favoritable.includes(:favoritable).order(created_at: :desc)
 
         render json: {
           favorites: @favorites.map { |fav| favorite_response(fav) },
-          dishes: current_user.favorited_dishes.includes(:seller_profile).map { |dish| dish_favorite_response(dish) },
-          sellers: current_user.favorited_sellers.includes(:user).map { |seller| seller_favorite_response(seller) }
+          dishes: current_user.favorited_dishes.kept.includes(:seller_profile).map { |dish| dish_favorite_response(dish) },
+          sellers: current_user.favorited_sellers.kept.includes(:user).map { |seller| seller_favorite_response(seller) }
         }, status: :ok
       end
 
       # GET /api/v1/favorites/dishes
       def dishes
-        @dishes = current_user.favorited_dishes.includes(:seller_profile, photos_attachments: :blob).order("favorites.created_at DESC")
+        @dishes = current_user.favorited_dishes.kept.includes(:seller_profile, photos_attachments: :blob).order("favorites.created_at DESC")
 
         render json: {
           dishes: @dishes.map { |dish| dish_favorite_response(dish) }
@@ -25,7 +25,7 @@ module Api
 
       # GET /api/v1/favorites/sellers
       def sellers
-        @sellers = current_user.favorited_sellers.includes(:user).order("favorites.created_at DESC")
+        @sellers = current_user.favorited_sellers.kept.includes(:user).order("favorites.created_at DESC")
 
         render json: {
           sellers: @sellers.map { |seller| seller_favorite_response(seller) }
@@ -104,9 +104,9 @@ module Api
 
         case favoritable_type
         when "Dish"
-          Dish.find_by(id: favoritable_id)
+          Dish.kept.find_by(id: favoritable_id)
         when "SellerProfile", "Seller"
-          SellerProfile.find_by(id: favoritable_id)
+          SellerProfile.kept.find_by(id: favoritable_id)
         else
           nil
         end

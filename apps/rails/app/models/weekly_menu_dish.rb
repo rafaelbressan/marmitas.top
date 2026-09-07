@@ -14,6 +14,10 @@ class WeeklyMenuDish < ApplicationRecord
 
   # Scopes
   scope :available, -> { where("remaining_quantity > 0") }
+  # A vitrine so mostra prato vivo. O painel do marmiteiro nao usa este escopo de
+  # proposito: la a linha e o registro do dia, com o quanto foi anunciado e o
+  # quanto sobrou, e some-la esconderia a baixa (BRES-140).
+  scope :with_kept_dish, -> { joins(:dish).merge(Dish.kept) }
   scope :ordered, -> { order(:display_order, :created_at) }
 
   # Get effective price (override or base price)

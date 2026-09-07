@@ -25,7 +25,7 @@ module Api
 
       # GET /api/v1/menus/:id
       def show
-        @menu = WeeklyMenu.find(params[:id])
+        @menu = WeeklyMenu.kept.find(params[:id])
 
         render json: {
           menu: menu_detail(@menu)
@@ -47,7 +47,7 @@ module Api
 
       # GET /api/v1/sellers/:seller_id/menus
       def seller_menus
-        @seller = SellerProfile.find(params[:seller_id])
+        @seller = SellerProfile.kept.find(params[:seller_id])
         @menus = @seller.weekly_menus.active.available_now
                         .includes(weekly_menu_dishes: { dish: :photos })
                         .order(available_from: :desc)
@@ -79,7 +79,7 @@ module Api
             average_rating: seller.average_rating.to_f,
             verified: seller.verified
           },
-          preview_dishes: menu.weekly_menu_dishes.ordered.limit(3).map { |md| dish_preview(md) }
+          preview_dishes: menu.weekly_menu_dishes.with_kept_dish.ordered.limit(3).map { |md| dish_preview(md) }
         }
       end
 
@@ -104,7 +104,7 @@ module Api
             reviews_count: seller.reviews_count,
             verified: seller.verified
           },
-          dishes: menu.weekly_menu_dishes.ordered.map { |md| dish_detail(md) }
+          dishes: menu.weekly_menu_dishes.with_kept_dish.ordered.map { |md| dish_detail(md) }
         }
       end
 
