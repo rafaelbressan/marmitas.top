@@ -36,6 +36,13 @@ module Backend
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    # Version the schema as db/structure.sql instead of db/schema.rb. The Ruby
+    # dumper cannot represent the PostGIS `geography` column of
+    # `selling_locations` and drops the whole table from the dump, which means a
+    # database created with db:prepare or db:schema:load has no selling
+    # locations. structure.sql is a plain pg_dump and keeps everything.
+    config.active_record.schema_format = :sql
+
     # Only loads a smaller set of middleware suitable for API only apps.
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
