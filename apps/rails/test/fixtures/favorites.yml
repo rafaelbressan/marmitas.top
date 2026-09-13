@@ -8,3 +8,9 @@ carla_segue_marli:
 carla_curte_feijoada:
   user: carla
   favoritable: feijoada (Dish)
+
+# Favorito de outra conta: prova que `destroy` escopado por `current_user.favorites`
+# nao acha o id alheio (BRES-102).
+marli_curte_algo:
+  user: marli
+  favoritable: carne_de_panela (Dish)
