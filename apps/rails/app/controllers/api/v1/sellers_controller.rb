@@ -127,12 +127,13 @@ module Api
       end
 
       def seller_detail(seller)
+        location = current_public_location(seller)
+        current_location_summary = location ? public_location_summary(seller, location) : nil
+
         detail = {
           id: seller.id,
           business_name: seller.business_name,
           bio: seller.bio,
-          phone: seller.phone,
-          whatsapp: seller.whatsapp,
           city: seller.city,
           state: seller.state,
           operating_hours: seller.operating_hours,
@@ -146,13 +147,46 @@ module Api
           arrived_at: seller.arrived_at,
           leaving_at: seller.leaving_at,
           current_menu: seller.current_menu ? menu_summary(seller.current_menu) : nil,
-          current_location: live_position_visible?(seller.current_location) ? location_summary(seller.current_location) : nil,
-          # So os pontos salvos. A linha "circulando" e posicao ao vivo, nao um
-          # lugar publicado.
-          selling_locations: seller.selling_locations.kept.pontos.map { |loc| location_summary(loc) }
+          current_location: current_location_summary,
+          # So o ponto salvo (kind "ponto") onde o turno esta aberto agora. A
+          # linha "circulando" nao e um lugar publicado, e os outros pontos
+          # salvos sao do dono, nao do publico (BRES-136).
+          selling_locations: (location&.ponto? && current_location_summary) ? [ current_location_summary ] : []
         }
+
+        if policy(seller).contact_visible?
+          detail[:phone] = seller.phone
+          detail[:whatsapp] = seller.whatsapp
+        end
+
         detail[:is_favorited] = current_user.favorited?(seller) if current_user.present?
         detail
+      end
+
+      # O turno tem que estar aberto de verdade (`broadcasting?` confere
+      # `leaving_at`, ja que `auto_shutoff_if_expired!` nao roda em request de
+      # leitura) e a linha "circulando" continua reservada a quem tem token
+      # (`live_position_visible?`).
+      def current_public_location(seller)
+        return nil unless seller.broadcasting?
+
+        location = seller.current_location
+        return nil unless live_position_visible?(location)
+
+        location
+      end
+
+      # Sem token, so nome do ponto: sem endereco de texto livre e sem
+      # coordenada exata (BRES-136).
+      def public_location_summary(seller, location)
+        summary = { id: location.id, name: location.name }
+        return summary unless policy(seller).precise_location_visible?
+
+        summary.merge(
+          address: location.address,
+          latitude: location.latitude.to_f,
+          longitude: location.longitude.to_f
+        )
       end
 
       def menu_summary(menu)
@@ -164,16 +198,6 @@ module Api
           available_until: menu.available_until,
           dishes_count: menu.weekly_menu_dishes.kept.count,
           total_available_quantity: menu.total_available_quantity
-        }
-      end
-
-      def location_summary(location)
-        {
-          id: location.id,
-          name: location.name,
-          address: location.address,
-          latitude: location.latitude.to_f,
-          longitude: location.longitude.to_f
         }
       end
 
