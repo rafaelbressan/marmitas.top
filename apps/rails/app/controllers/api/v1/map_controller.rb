@@ -17,8 +17,9 @@ module Api
         radius = params[:radius]&.to_f || 10.0 # Default 10km for map view
 
         # Get nearby active sellers with their current locations
+        # BRES-129: `verified` e selo, nao portao de descoberta. Ver decisao
+        # na issue.
         @sellers = SellerProfile.kept
-                                 .verified
                                  .nearby(lat, lng, radius)
                                  .includes(:user, :current_location)
                                  .limit(100)
@@ -96,7 +97,6 @@ module Api
 
         # Find sellers within the bounding box
         @sellers = SellerProfile.kept
-                                 .verified
                                  .broadcasting
                                  .joins(:current_location)
                                  .where(

@@ -7,7 +7,8 @@ module Api
       def index
         authorize SellerProfile, :index?
 
-        @sellers = SellerProfile.kept.verified.includes(:user)
+        # BRES-129: `verified` e selo, nao portao de descoberta.
+        @sellers = SellerProfile.kept.includes(:user)
         @sellers = apply_filters(@sellers)
 
         # Prioritize favorited sellers if user is authenticated
@@ -54,7 +55,6 @@ module Api
 
         # Use PostGIS-based nearby search
         @sellers = SellerProfile.kept
-                                 .verified
                                  .nearby(lat, lng, radius)
                                  .includes(:user, :current_location)
                                  .limit(50)

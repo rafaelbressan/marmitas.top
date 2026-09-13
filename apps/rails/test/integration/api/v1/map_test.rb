@@ -94,4 +94,31 @@ class Api::V1::MapTest < ActionDispatch::IntegrationTest
     assert_includes nomes_encontrados, seller_profiles(:marli_marmitas).business_name
     assert_not_includes nomes_encontrados, seller_profiles(:tiao_vencido).business_name
   end
+
+  # BRES-129: `verified` era portao das quatro rotas de descoberta, e nada no
+  # sistema grava `verified = true`. Um marmiteiro novo nao aparecia nunca.
+  # `paulo_novo` esta ativo e nunca foi verificado.
+  test "marmiteiro ativo e nao verificado aparece no mapa" do
+    nomes_no_mapa = nomes(sellers_no_mapa(headers: auth_headers(users(:carla))))
+
+    assert_includes nomes_no_mapa, seller_profiles(:paulo_novo).business_name
+  end
+
+  test "map/bounds tambem mostra o nao verificado" do
+    get "/api/v1/map/bounds",
+        params: { ne_lat: -22.85, ne_lng: -43.10, sw_lat: -23.00, sw_lng: -43.30 },
+        headers: auth_headers(users(:carla))
+
+    assert_response :ok
+    nomes_no_mapa = nomes(response.parsed_body["features"])
+
+    assert_includes nomes_no_mapa, seller_profiles(:paulo_novo).business_name
+  end
+
+  test "a ordenacao por distancia do mapa nao depende de verified" do
+    features = sellers_no_mapa(headers: auth_headers(users(:carla)))
+    distancias = features.map { |f| f.dig("properties", "distance_km") }.compact
+
+    assert_equal distancias.sort, distancias, "as distancias tem que vir crescentes"
+  end
 end
