@@ -99,9 +99,11 @@ class Api::V1::DiscardTest < ActionDispatch::IntegrationTest
     get "/api/v1/sellers/#{@marli.id}"
 
     assert_response :ok
-    assert_equal 2, json_response.dig("seller", "selling_locations").size
+    # A resposta publica so devolve o ponto atual (BRES-136) — a arvore
+    # inteira de pontos volta no banco, e e la que se confere.
+    assert_equal 2, @marli.reload.selling_locations.kept.pontos.count
     assert_not_nil json_response.dig("seller", "current_menu")
-    assert_equal 2, @marli.reload.dishes.kept.count
+    assert_equal 2, @marli.dishes.kept.count
     assert_equal 2, @marli.weekly_menus.kept.count
     assert_equal 2, @marli.reviews.kept.count
   end

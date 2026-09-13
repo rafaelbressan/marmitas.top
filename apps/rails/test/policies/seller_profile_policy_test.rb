@@ -22,4 +22,20 @@ class SellerProfilePolicyTest < ActiveSupport::TestCase
       anonimo: true, consumidor: true, vendedor_dono: true,
       vendedor_outro: true, admin: true
   end
+
+  # BRES-136: telefone e whatsapp so saem para quem tem token, seja o proprio
+  # dono ou nao — o corte e "tem conta", nao "e dono deste perfil".
+  test "contato so aparece para quem esta autenticado" do
+    assert_matrix SellerProfilePolicy, :contact_visible?, seller_profiles(:marli_marmitas),
+      anonimo: false, consumidor: true, vendedor_dono: true,
+      vendedor_outro: true, admin: true
+  end
+
+  # BRES-136: coordenada exata e endereco de texto livre tambem so saem para
+  # quem esta autenticado.
+  test "coordenada exata so aparece para quem esta autenticado" do
+    assert_matrix SellerProfilePolicy, :precise_location_visible?, seller_profiles(:marli_marmitas),
+      anonimo: false, consumidor: true, vendedor_dono: true,
+      vendedor_outro: true, admin: true
+  end
 end
