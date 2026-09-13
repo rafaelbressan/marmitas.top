@@ -8,7 +8,7 @@ module Api
         authorize WeeklyMenu, :index?
 
         @menus = WeeklyMenu.active.available_now
-                          .includes(seller_profile: :user, weekly_menu_dishes: { dish: :photos })
+                          .includes(seller_profile: :user, weekly_menu_dishes: { dish: { photos_attachments: :blob } })
                           .order(created_at: :desc)
 
         # Filter by city
@@ -43,7 +43,7 @@ module Api
         authorize WeeklyMenu, :available_today?
 
         @menus = WeeklyMenu.active.available_now
-                          .includes(seller_profile: :user, weekly_menu_dishes: { dish: :photos })
+                          .includes(seller_profile: :user, weekly_menu_dishes: { dish: { photos_attachments: :blob } })
                           .order(created_at: :desc)
 
         render json: {
