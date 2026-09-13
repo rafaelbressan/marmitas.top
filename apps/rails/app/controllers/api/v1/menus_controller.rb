@@ -1,14 +1,14 @@
 module Api
   module V1
     class MenusController < BaseController
-      skip_before_action :authenticate_user!, only: [ :index, :show, :available_today ]
+      skip_before_action :authenticate_user!, only: [ :index, :show, :available_today, :seller_menus ]
 
       # GET /api/v1/menus
       def index
         authorize WeeklyMenu, :index?
 
         @menus = WeeklyMenu.active.available_now
-                          .includes(seller_profile: :user, weekly_menu_dishes: { dish: :photos })
+                          .includes(seller_profile: :user, weekly_menu_dishes: { dish: { photos_attachments: :blob } })
                           .order(created_at: :desc)
 
         # Filter by city
@@ -43,7 +43,7 @@ module Api
         authorize WeeklyMenu, :available_today?
 
         @menus = WeeklyMenu.active.available_now
-                          .includes(seller_profile: :user, weekly_menu_dishes: { dish: :photos })
+                          .includes(seller_profile: :user, weekly_menu_dishes: { dish: { photos_attachments: :blob } })
                           .order(created_at: :desc)
 
         render json: {
@@ -51,13 +51,13 @@ module Api
         }, status: :ok
       end
 
-      # GET /api/v1/sellers/:seller_id/menus
+      # GET /api/v1/sellers/:id/menus
       def seller_menus
         authorize WeeklyMenu, :seller_menus?
 
-        @seller = SellerProfile.kept.find(params[:seller_id])
+        @seller = SellerProfile.kept.find(params[:id])
         @menus = @seller.weekly_menus.active.available_now
-                        .includes(weekly_menu_dishes: { dish: :photos })
+                        .includes(weekly_menu_dishes: { dish: { photos_attachments: :blob } })
                         .order(available_from: :desc)
 
         render json: {
