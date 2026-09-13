@@ -106,3 +106,22 @@ tiao_vencido:
   arrived_at: <%= 20.hours.ago.to_fs(:db) %>
   leaving_at: <%= 8.hours.ago.to_fs(:db) %>
   last_active_at: <%= 20.hours.ago.to_fs(:db) %>
+
+# Ativo, nunca verificado. Antes da BRES-129 o `.verified` das rotas de
+# descoberta escondia este marmiteiro para sempre: nenhuma tarefa do sistema
+# preenche `verified`.
+paulo_novo:
+  <<: *DEFAULTS
+  user: paulo
+  business_name: Marmitas do Paulo
+  bio: Comecou essa semana, perto da Praca Sao Salvador.
+  phone: "21988110007"
+  whatsapp: "5521988110007"
+  city: Rio de Janeiro
+  state: RJ
+  verified: false
+  currently_active: true
+  current_location: largo_do_machado_paulo
+  arrived_at: <%= 1.hour.ago.to_fs(:db) %>
+  leaving_at: <%= 5.hours.from_now.to_fs(:db) %>
+  last_active_at: <%= 1.hour.ago.to_fs(:db) %>

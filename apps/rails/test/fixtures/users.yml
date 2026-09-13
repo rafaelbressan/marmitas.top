@@ -65,3 +65,11 @@ tiao:
   name: Tiao Alves
   email: tiao.esquecido@marmitas.top
   phone: "21988110006"
+
+# Acabou de se cadastrar e ja anuncia. Nunca foi verificado por ninguem: e
+# quem a BRES-129 tira da invisibilidade.
+paulo:
+  <<: *DEFAULTS
+  name: Paulo Diniz
+  email: paulo.diniz@marmitas.top
+  phone: "21988110007"

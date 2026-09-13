@@ -62,3 +62,14 @@ praca_da_bandeira:
   longitude: -43.205000
   lonlat: "SRID=4326;POINT(-43.205 -22.912)"
   notes: De segunda a sexta, 11h as 14h.
+
+# ~1 km do Largo do Machado, mais longe que a Marli: prova a ordenacao por
+# distancia sem depender de `verified`.
+largo_do_machado_paulo:
+  seller_profile: paulo_novo
+  name: Praca Sao Salvador
+  address: Praca Sao Salvador, Laranjeiras
+  latitude: -22.933800
+  longitude: -43.185600
+  lonlat: "SRID=4326;POINT(-43.1856 -22.9338)"
+  notes: Comecou essa semana.
